@@ -9,8 +9,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { calendarSchema, type CalendarFormData } from "@/lib/validations/event"
-import { useCreateCalendar, useUpdateCalendar } from "@/hooks/use-calendars"
+import { useCreateCalendar, useUpdateCalendar } from "@/actions/query/calendars"
 import { useCalendarVisibility } from "@/hooks/use-calendar-visibility"
+import { FORM_LABELS, FORM_PLACEHOLDERS, BUTTON_LABELS } from "@/constants/forms"
 
 interface CalendarModalProps {
   isOpen: boolean
@@ -63,11 +64,9 @@ export default function CalendarModal({ isOpen, onClose, calendar }: CalendarMod
     try {
       if (calendar?.id) {
         await updateCalendarMutation.mutateAsync({ id: calendar.id, calendarData: data })
-        // Update visibility state
         setCalendarVisibility(calendar.id, data.isVisible)
       } else {
         const newCalendar = await createCalendarMutation.mutateAsync(data)
-        // Set new calendar to visible
         if (data.isVisible && newCalendar.id) {
           setCalendarVisibility(newCalendar.id, true)
         }
@@ -78,6 +77,8 @@ export default function CalendarModal({ isOpen, onClose, calendar }: CalendarMod
     }
   }
 
+  const isPending = createCalendarMutation.isPending || updateCalendarMutation.isPending
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md">
@@ -87,23 +88,23 @@ export default function CalendarModal({ isOpen, onClose, calendar }: CalendarMod
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
-            <Label htmlFor="name">Calendar Name *</Label>
+            <Label htmlFor="name">{FORM_LABELS.CALENDAR_NAME} *</Label>
             <Input
               id="name"
               {...register("name")}
               className={errors.name ? "border-red-500" : ""}
-              placeholder="e.g., Work, Personal, Family"
+              placeholder={FORM_PLACEHOLDERS.CALENDAR_NAME}
             />
             {errors.name && <p className="text-sm text-red-500 mt-1">{errors.name.message}</p>}
           </div>
 
           <div>
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">{FORM_LABELS.CALENDAR_DESCRIPTION}</Label>
             <Textarea
               id="description"
               {...register("description")}
               rows={2}
-              placeholder="Optional description for this calendar"
+              placeholder={FORM_PLACEHOLDERS.CALENDAR_DESCRIPTION}
             />
           </div>
 
@@ -132,17 +133,10 @@ export default function CalendarModal({ isOpen, onClose, calendar }: CalendarMod
 
           <div className="flex justify-end space-x-2 pt-4">
             <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
+              {BUTTON_LABELS.CANCEL}
             </Button>
-            <Button
-              type="submit"
-              disabled={isSubmitting || createCalendarMutation.isPending || updateCalendarMutation.isPending}
-            >
-              {isSubmitting || createCalendarMutation.isPending || updateCalendarMutation.isPending
-                ? "Saving..."
-                : calendar?.id
-                  ? "Update Calendar"
-                  : "Create Calendar"}
+            <Button type="submit" disabled={isSubmitting || isPending}>
+              {isSubmitting || isPending ? BUTTON_LABELS.SAVING : calendar?.id ? "Update Calendar" : "Create Calendar"}
             </Button>
           </div>
         </form>

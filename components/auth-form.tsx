@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -10,14 +9,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { authSchema } from "@/app/lib/validations"
+import { authSchema } from "@/lib/validations/event"
+import { useLogin, useRegister } from "@/actions/query/auth"
+import { PAGES } from "@/constants/pages"
+import { FORM_LABELS, FORM_PLACEHOLDERS, BUTTON_LABELS } from "@/constants/forms"
 import type { AuthFormData } from "@/types/auth"
 
 export default function AuthForm() {
   const [isLogin, setIsLogin] = useState(true)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState("")
   const router = useRouter()
+
+  const loginMutation = useLogin()
+  const registerMutation = useRegister()
 
   const {
     register,
@@ -32,33 +35,20 @@ export default function AuthForm() {
   })
 
   const onSubmit = async (data: AuthFormData) => {
-    setIsLoading(true)
-    setError("")
-
     try {
-      const result = await signIn("credentials", {
-        email: data.email,
-        password: data.password,
-        name: data.name,
-        action: data.action,
-        redirect: false,
-      })
-
-      if (result?.error) {
-        setError(result.error)
-      } else if (result?.ok) {
-        router.push("/dashboard")
+      if (isLogin) {
+        await loginMutation.mutateAsync(data)
+      } else {
+        await registerMutation.mutateAsync(data)
       }
-    } catch (err) {
-      setError("An unexpected error occurred")
-    } finally {
-      setIsLoading(false)
+      router.push(PAGES.DASHBOARD)
+    } catch (error) {
+      console.error("Auth error:", error)
     }
   }
 
   const toggleMode = () => {
     setIsLogin(!isLogin)
-    setError("")
     reset({
       email: "",
       password: "",
@@ -67,10 +57,13 @@ export default function AuthForm() {
     })
   }
 
+  const isLoading = loginMutation.isPending || registerMutation.isPending
+  const error = loginMutation.error || registerMutation.error
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{isLogin ? "Login" : "Create Account"}</CardTitle>
+        <CardTitle>{isLogin ? BUTTON_LABELS.LOGIN : BUTTON_LABELS.REGISTER}</CardTitle>
         <CardDescription>
           {isLogin ? "Enter your credentials to access your events" : "Create a new account to get started"}
         </CardDescription>
@@ -79,29 +72,42 @@ export default function AuthForm() {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {error && (
             <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription>{error.message}</AlertDescription>
             </Alert>
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" {...register("email")} className={errors.email ? "border-red-500" : ""} />
+            <Label htmlFor="email">{FORM_LABELS.EMAIL}</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder={FORM_PLACEHOLDERS.EMAIL}
+              {...register("email")}
+              className={errors.email ? "border-red-500" : ""}
+            />
             {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
           </div>
 
           {!isLogin && (
             <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
-              <Input id="name" type="text" {...register("name")} className={errors.name ? "border-red-500" : ""} />
+              <Label htmlFor="name">{FORM_LABELS.NAME}</Label>
+              <Input
+                id="name"
+                type="text"
+                placeholder={FORM_PLACEHOLDERS.NAME}
+                {...register("name")}
+                className={errors.name ? "border-red-500" : ""}
+              />
               {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
             </div>
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">{FORM_LABELS.PASSWORD}</Label>
             <Input
               id="password"
               type="password"
+              placeholder={FORM_PLACEHOLDERS.PASSWORD}
               {...register("password")}
               className={errors.password ? "border-red-500" : ""}
             />
@@ -111,7 +117,7 @@ export default function AuthForm() {
           <input type="hidden" {...register("action")} value={isLogin ? "login" : "register"} />
 
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "Please wait..." : isLogin ? "Login" : "Create Account"}
+            {isLoading ? BUTTON_LABELS.LOADING : isLogin ? BUTTON_LABELS.LOGIN : BUTTON_LABELS.REGISTER}
           </Button>
 
           <div className="text-center">

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
-import { useCalendars, useDeleteCalendar } from "@/hooks/use-calendars"
+import { useCalendars, useDeleteCalendar } from "@/actions/query/calendars"
 import { useCalendarVisibility } from "@/hooks/use-calendar-visibility"
 import { exportCalendar } from "@/lib/ics-export"
 import CalendarModal from "./calendar-modal"
@@ -43,7 +43,7 @@ export default function CalendarSidebar() {
   }
 
   const handleExportCalendar = (calendar: any) => {
-    const events = calendar.events // Assuming events are passed as part of the calendar object
+    const events = calendar.events || []
     if (events.length === 0) {
       alert("This calendar has no events to export.")
       return
@@ -90,7 +90,7 @@ export default function CalendarSidebar() {
                   {calendar.description && <div className="text-xs text-gray-500 truncate">{calendar.description}</div>}
                 </div>
                 <Badge variant="secondary" className="text-xs">
-                  {calendar.events.length}
+                  0
                 </Badge>
               </div>
             </div>
@@ -119,6 +119,7 @@ export default function CalendarSidebar() {
                 variant="ghost"
                 onClick={() => handleDeleteCalendar(calendar.id)}
                 className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                disabled={deleteCalendarMutation.isPending}
               >
                 <Trash2 className="h-3 w-3" />
               </Button>

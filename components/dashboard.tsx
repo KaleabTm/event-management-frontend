@@ -1,15 +1,16 @@
 "use client"
 
 import { useState } from "react"
-import { signOut } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { useEvents } from "@/hooks/use-events"
-import { useCalendars } from "@/hooks/use-calendars"
+import { useEvents } from "@/actions/query/events"
+import { useCalendars } from "@/actions/query/calendars"
+import { useLogout } from "@/actions/query/auth"
 import { useCalendarVisibility } from "@/hooks/use-calendar-visibility"
 import { exportCalendar, generateICSContent, downloadICSFile } from "@/lib/ics-export"
+import { BUTTON_LABELS } from "@/constants/forms"
 import CalendarView from "./calendar-view"
 import ListView from "./list-view"
 import EventModal from "./event-modal"
@@ -24,6 +25,7 @@ export default function Dashboard() {
   const { data: events = [] } = useEvents()
   const { data: calendars = [] } = useCalendars()
   const { visibleCalendarIds } = useCalendarVisibility()
+  const logoutMutation = useLogout()
 
   const handleCreateEvent = () => {
     setEditingEvent(null)
@@ -36,7 +38,7 @@ export default function Dashboard() {
   }
 
   const handleLogout = () => {
-    signOut({ callbackUrl: "/" })
+    logoutMutation.mutate()
   }
 
   const handleExportAll = () => {
@@ -73,7 +75,7 @@ export default function Dashboard() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="flex items-center">
                     <Download className="h-4 w-4 mr-2" />
-                    Export
+                    {BUTTON_LABELS.EXPORT}
                     <ChevronDown className="h-4 w-4 ml-1" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -86,9 +88,15 @@ export default function Dashboard() {
                   ))}
                 </DropdownMenuContent>
               </DropdownMenu>
-              <Button variant="outline" size="sm" onClick={handleLogout} className="flex items-center">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleLogout}
+                disabled={logoutMutation.isPending}
+                className="flex items-center"
+              >
                 <LogOut className="h-4 w-4 mr-2" />
-                Logout
+                {logoutMutation.isPending ? BUTTON_LABELS.LOADING : BUTTON_LABELS.LOGOUT}
               </Button>
             </div>
           </div>

@@ -6,8 +6,8 @@ import dayGridPlugin from "@fullcalendar/daygrid"
 import timeGridPlugin from "@fullcalendar/timegrid"
 import interactionPlugin from "@fullcalendar/interaction"
 import { Card, CardContent } from "@/components/ui/card"
-import { useEvents } from "@/hooks/use-events"
-import { useCalendars } from "@/hooks/use-calendars"
+import { useEvents } from "@/actions/query/events"
+import { useCalendars } from "@/actions/query/calendars"
 import { useCalendarVisibility } from "@/hooks/use-calendar-visibility"
 
 // Import FullCalendar CSS
