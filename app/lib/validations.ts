@@ -53,7 +53,3 @@ export const authSchema = z.object({
   name: z.string().min(1, "Name is required").optional(),
   action: z.enum(["login", "register"]),
 })
-
-export type EventFormData = z.infer<typeof eventSchema>
-export type AuthFormData = z.infer<typeof authSchema>
-export type CalendarFormData = z.infer<typeof calendarSchema>

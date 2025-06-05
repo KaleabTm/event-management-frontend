@@ -9,9 +9,6 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  experimental: {
-    serverComponentsExternalPackages: ['@fullcalendar/react']
-  }
 }
 
 export default nextConfig

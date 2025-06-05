@@ -13,6 +13,8 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Switch } from "@/components/ui/switch"
 import { eventSchema, type EventFormData } from "@/lib/validations/event"
 import { useEventStore } from "@/lib/store"
+import { exportSingleEvent } from "@/lib/ics-export"
+import { Download } from "lucide-react"
 
 interface EventModalProps {
   isOpen: boolean
@@ -33,7 +35,7 @@ const weekdays = [
 ]
 
 export default function EventModal({ isOpen, onClose, event }: EventModalProps) {
-  const { addEvent, updateEvent } = useEventStore()
+  const { addEvent, updateEvent, calendars } = useEventStore()
 
   const {
     register,
@@ -52,6 +54,7 @@ export default function EventModal({ isOpen, onClose, event }: EventModalProps) 
       end: new Date(Date.now() + 60 * 60 * 1000).toISOString().slice(0, 16),
       allDay: false,
       color: colors[0],
+      calendarId: "",
       recurrence: {
         type: "none",
         interval: 1,
@@ -77,6 +80,7 @@ export default function EventModal({ isOpen, onClose, event }: EventModalProps) 
           : new Date(Date.now() + 60 * 60 * 1000).toISOString().slice(0, 16),
         allDay: event.allDay || false,
         color: event.color || colors[0],
+        calendarId: event.calendarId || calendars[0]?.id || "",
         recurrence: event.recurrence || {
           type: "none",
           interval: 1,
@@ -94,6 +98,7 @@ export default function EventModal({ isOpen, onClose, event }: EventModalProps) 
         end: new Date(Date.now() + 60 * 60 * 1000).toISOString().slice(0, 16),
         allDay: false,
         color: colors[0],
+        calendarId: calendars[0]?.id || "",
         recurrence: {
           type: "none",
           interval: 1,
@@ -104,7 +109,7 @@ export default function EventModal({ isOpen, onClose, event }: EventModalProps) 
         },
       })
     }
-  }, [event, reset, isOpen])
+  }, [event, reset, isOpen, calendars])
 
   const onSubmit = async (data: EventFormData) => {
     try {
@@ -138,6 +143,31 @@ export default function EventModal({ isOpen, onClose, event }: EventModalProps) 
             <div>
               <Label htmlFor="description">Description</Label>
               <Textarea id="description" {...register("description")} rows={3} />
+            </div>
+            <div>
+              <Label>Calendar *</Label>
+              <Controller
+                name="calendarId"
+                control={control}
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className={errors.calendarId ? "border-red-500" : ""}>
+                      <SelectValue placeholder="Select a calendar" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {calendars.map((calendar) => (
+                        <SelectItem key={calendar.id} value={calendar.id}>
+                          <div className="flex items-center space-x-2">
+                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: calendar.color }} />
+                            <span>{calendar.name}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.calendarId && <p className="text-sm text-red-500 mt-1">{errors.calendarId.message}</p>}
             </div>
           </div>
 
@@ -306,13 +336,29 @@ export default function EventModal({ isOpen, onClose, event }: EventModalProps) 
           </div>
 
           {/* Form Actions */}
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Saving..." : event?.id ? "Update Event" : "Create Event"}
-            </Button>
+          <div className="flex justify-between items-center pt-4">
+            {event?.id && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  const eventData = { ...event, ...watch() }
+                  exportSingleEvent(eventData)
+                }}
+                className="flex items-center"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Export Event
+              </Button>
+            )}
+            <div className="flex space-x-2">
+              <Button type="button" variant="outline" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Saving..." : event?.id ? "Update Event" : "Create Event"}
+              </Button>
+            </div>
           </div>
         </form>
       </DialogContent>

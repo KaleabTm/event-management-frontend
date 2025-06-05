@@ -19,36 +19,46 @@ interface CalendarViewProps {
 
 export default function CalendarView({ onEditEvent }: CalendarViewProps) {
   const calendarRef = useRef<FullCalendar>(null)
-  const { events, isLoading } = useEventStore()
+  const { getVisibleEvents, calendars, isLoading } = useEventStore()
+
+  const visibleEvents = getVisibleEvents()
 
   // Convert events to FullCalendar format
-  const calendarEvents = events.map((event) => ({
-    id: event.id,
-    title: event.title,
-    start: event.start,
-    end: event.end,
-    allDay: event.allDay,
-    backgroundColor: event.color,
-    borderColor: event.color,
-    extendedProps: {
-      description: event.description,
-      recurrence: event.recurrence,
-    },
-  }))
+  const calendarEvents = visibleEvents.map((event) => {
+    const calendar = calendars.find((c) => c.id === event.calendarId)
+    return {
+      id: event.id,
+      title: event.title,
+      start: event.start,
+      end: event.end,
+      allDay: event.allDay,
+      backgroundColor: calendar?.color || event.color,
+      borderColor: calendar?.color || event.color,
+      extendedProps: {
+        description: event.description,
+        recurrence: event.recurrence,
+        calendarId: event.calendarId,
+      },
+    }
+  })
 
   const handleEventClick = (info: any) => {
-    const event = events.find((e) => e.id === info.event.id)
+    const event = visibleEvents.find((e) => e.id === info.event.id)
     if (event) {
       onEditEvent(event)
     }
   }
 
   const handleDateSelect = (selectInfo: any) => {
+    // Get the first visible calendar as default
+    const defaultCalendar = calendars.find((c) => c.isVisible)
+
     // Create new event with selected date/time
     const newEvent = {
       start: selectInfo.start.toISOString(),
       end: selectInfo.end.toISOString(),
       allDay: selectInfo.allDay,
+      calendarId: defaultCalendar?.id || calendars[0]?.id || "",
     }
     onEditEvent(newEvent)
   }

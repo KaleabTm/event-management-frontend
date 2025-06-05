@@ -7,6 +7,7 @@ interface Event {
   end: string
   allDay: boolean
   color: string
+  calendarId: string
   userId: string
   recurrence: {
     type: "none" | "daily" | "weekly" | "monthly" | "yearly" | "custom"

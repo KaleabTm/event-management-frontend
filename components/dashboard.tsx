@@ -5,20 +5,24 @@ import { signOut } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { useEventStore } from "@/lib/store"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { useEventStore } from "@/hooks/use-event-store"
+import { exportCalendar, generateICSContent, downloadICSFile } from "@/app/lib/ics-export"
 import CalendarView from "./calendar-view"
 import ListView from "./list-view"
 import EventModal from "./event-modal"
-import { Plus, LogOut, Calendar, List } from "lucide-react"
+import CalendarSidebar from "./calendar-sidebar"
+import { Plus, LogOut, Calendar, List, Download, ChevronDown } from "lucide-react"
 
 export default function Dashboard() {
   const [isEventModalOpen, setIsEventModalOpen] = useState(false)
   const [editingEvent, setEditingEvent] = useState(null)
-  const { fetchEvents, error, setError } = useEventStore()
+  const { fetchEvents, fetchCalendars, error, setError, calendars, getVisibleEvents } = useEventStore()
 
   useEffect(() => {
     fetchEvents()
-  }, [fetchEvents])
+    fetchCalendars()
+  }, [fetchEvents, fetchCalendars])
 
   const handleCreateEvent = () => {
     setEditingEvent(null)
@@ -34,6 +38,25 @@ export default function Dashboard() {
     signOut({ callbackUrl: "/" })
   }
 
+  const handleExportAll = () => {
+    const allEvents = getVisibleEvents()
+    if (allEvents.length === 0) {
+      alert("No events to export.")
+      return
+    }
+    const icsContent = generateICSContent(allEvents, "All Events")
+    downloadICSFile(icsContent, "all_events.ics")
+  }
+
+  const handleExportByCalendar = (calendar: any) => {
+    const events = getVisibleEvents().filter((e) => e.calendarId === calendar.id)
+    if (events.length === 0) {
+      alert(`No events in ${calendar.name} to export.`)
+      return
+    }
+    exportCalendar(events, calendar.name)
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -45,6 +68,23 @@ export default function Dashboard() {
               <h1 className="text-xl font-semibold text-gray-900">Event Manager</h1>
             </div>
             <div className="flex items-center space-x-4">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="flex items-center">
+                    <Download className="h-4 w-4 mr-2" />
+                    Export
+                    <ChevronDown className="h-4 w-4 ml-1" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={handleExportAll}>Export All Events</DropdownMenuItem>
+                  {calendars.map((calendar) => (
+                    <DropdownMenuItem key={calendar.id} onClick={() => handleExportByCalendar(calendar)}>
+                      Export {calendar.name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Button variant="outline" size="sm" onClick={handleLogout} className="flex items-center">
                 <LogOut className="h-4 w-4 mr-2" />
                 Logout
@@ -67,34 +107,42 @@ export default function Dashboard() {
           </Alert>
         )}
 
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">Your Events</h2>
-          <Button onClick={handleCreateEvent} className="flex items-center">
-            <Plus className="h-4 w-4 mr-2" />
-            Create Event
-          </Button>
+        <div className="flex gap-6">
+          {/* Calendar Sidebar */}
+          <CalendarSidebar />
+
+          {/* Main Content Area */}
+          <div className="flex-1">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Your Events</h2>
+              <Button onClick={handleCreateEvent} className="flex items-center">
+                <Plus className="h-4 w-4 mr-2" />
+                Create Event
+              </Button>
+            </div>
+
+            <Tabs defaultValue="calendar" className="space-y-6">
+              <TabsList className="grid w-full max-w-md grid-cols-2">
+                <TabsTrigger value="calendar" className="flex items-center">
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Calendar
+                </TabsTrigger>
+                <TabsTrigger value="list" className="flex items-center">
+                  <List className="h-4 w-4 mr-2" />
+                  List
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="calendar">
+                <CalendarView onEditEvent={handleEditEvent} />
+              </TabsContent>
+
+              <TabsContent value="list">
+                <ListView onEditEvent={handleEditEvent} />
+              </TabsContent>
+            </Tabs>
+          </div>
         </div>
-
-        <Tabs defaultValue="calendar" className="space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
-            <TabsTrigger value="calendar" className="flex items-center">
-              <Calendar className="h-4 w-4 mr-2" />
-              Calendar
-            </TabsTrigger>
-            <TabsTrigger value="list" className="flex items-center">
-              <List className="h-4 w-4 mr-2" />
-              List
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="calendar">
-            <CalendarView onEditEvent={handleEditEvent} />
-          </TabsContent>
-
-          <TabsContent value="list">
-            <ListView onEditEvent={handleEditEvent} />
-          </TabsContent>
-        </Tabs>
       </main>
 
       {/* Event Modal */}

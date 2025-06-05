@@ -1,33 +1,7 @@
 import { create } from "zustand"
 import { devtools } from "zustand/middleware"
-
-interface Event {
-  id: string
-  title: string
-  description?: string
-  start: string
-  end: string
-  allDay: boolean
-  color: string
-  calendarId: string
-  recurrence: {
-    type: "none" | "daily" | "weekly" | "monthly" | "yearly" | "custom"
-    interval: number
-    weekdays: number[]
-    monthlyType: "date" | "weekday"
-    weekdayOrdinal: number
-    endDate?: string
-    endAfter: number
-  }
-}
-
-interface Calendar {
-  id: string
-  name: string
-  description?: string
-  color: string
-  isVisible: boolean
-}
+import type { Event } from "@/types/event"
+import type { Calendar } from "@/types/calendar"
 
 interface EventStore {
   events: Event[]
@@ -37,13 +11,13 @@ interface EventStore {
 
   // Event Actions
   fetchEvents: () => Promise<void>
-  addEvent: (event: Omit<Event, "id">) => Promise<void>
+  addEvent: (event: Omit<Event, "id" | "userId" | "createdAt" | "updatedAt">) => Promise<void>
   updateEvent: (id: string, event: Partial<Event>) => Promise<void>
   deleteEvent: (id: string) => Promise<void>
 
   // Calendar Actions
   fetchCalendars: () => Promise<void>
-  addCalendar: (calendar: Omit<Calendar, "id">) => Promise<void>
+  addCalendar: (calendar: Omit<Calendar, "id" | "userId" | "createdAt" | "updatedAt">) => Promise<void>
   updateCalendar: (id: string, calendar: Partial<Calendar>) => Promise<void>
   deleteCalendar: (id: string) => Promise<void>
   toggleCalendarVisibility: (id: string) => void

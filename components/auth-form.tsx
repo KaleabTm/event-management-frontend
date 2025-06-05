@@ -10,7 +10,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { authSchema, type AuthFormData } from "@/lib/validations/event"
+import { authSchema } from "@/app/lib/validations"
+import type { AuthFormData } from "@/types/auth"
 
 export default function AuthForm() {
   const [isLogin, setIsLogin] = useState(true)

@@ -4,17 +4,19 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { useEventStore } from "@/lib/store"
-import { Calendar, Clock, Edit, Trash2, Repeat } from "lucide-react"
+import { Calendar, Clock, Edit, Trash2, Repeat, Download } from "lucide-react"
+import { exportSingleEvent } from "@/lib/ics-export"
 
 interface ListViewProps {
   onEditEvent: (event: any) => void
 }
 
 export default function ListView({ onEditEvent }: ListViewProps) {
-  const { events, deleteEvent, isLoading } = useEventStore()
+  const { getVisibleEvents, calendars, deleteEvent, isLoading } = useEventStore()
+  const visibleEvents = getVisibleEvents()
 
   // Sort events by start date
-  const sortedEvents = [...events].sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
+  const sortedEvents = [...visibleEvents].sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
 
   // Filter upcoming events
   const upcomingEvents = sortedEvents.filter((event) => new Date(event.start) >= new Date()).slice(0, 20)
@@ -105,7 +107,18 @@ export default function ListView({ onEditEvent }: ListViewProps) {
             >
               <div className="flex-1">
                 <div className="flex items-start justify-between mb-2">
-                  <h3 className="font-medium text-gray-900">{event.title}</h3>
+                  <div className="flex items-center space-x-2">
+                    <h3 className="font-medium text-gray-900">{event.title}</h3>
+                    {(() => {
+                      const calendar = calendars.find((c) => c.id === event.calendarId)
+                      return calendar ? (
+                        <Badge variant="outline" className="text-xs flex items-center space-x-1">
+                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: calendar.color }} />
+                          <span>{calendar.name}</span>
+                        </Badge>
+                      ) : null
+                    })()}
+                  </div>
                   <div className="w-3 h-3 rounded-full ml-2 mt-1" style={{ backgroundColor: event.color }} />
                 </div>
 
@@ -134,6 +147,9 @@ export default function ListView({ onEditEvent }: ListViewProps) {
               </div>
 
               <div className="flex items-center space-x-2 ml-4">
+                <Button variant="outline" size="sm" onClick={() => exportSingleEvent(event)} title="Export event">
+                  <Download className="h-4 w-4" />
+                </Button>
                 <Button variant="outline" size="sm" onClick={() => onEditEvent(event)}>
                   <Edit className="h-4 w-4" />
                 </Button>
