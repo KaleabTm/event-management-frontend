@@ -24,3 +24,159 @@ export const WEEKDAYS = [
   { value: 5, label: "Friday" },
   { value: 6, label: "Saturday" },
 ] as const
+
+// Form constants
+export const AUTH_FORM = {
+  FIELDS: {
+    EMAIL: {
+      NAME: "email",
+      LABEL: "Email Address",
+      PLACEHOLDER: "Enter your email address",
+      TYPE: "email",
+    },
+    PASSWORD: {
+      NAME: "password",
+      LABEL: "Password",
+      PLACEHOLDER: "Enter your password",
+      TYPE: "password",
+    },
+    NAME: {
+      NAME: "name",
+      LABEL: "Full Name",
+      PLACEHOLDER: "Enter your full name",
+      TYPE: "text",
+    },
+  },
+  BUTTONS: {
+    LOGIN: "Sign In",
+    REGISTER: "Create Account",
+    LOADING: "Please wait...",
+    TOGGLE_LOGIN: "Already have an account? Sign in",
+    TOGGLE_REGISTER: "Don't have an account? Sign up",
+  },
+} as const
+
+export const EVENT_FORM = {
+  FIELDS: {
+    TITLE: {
+      NAME: "title",
+      LABEL: "Event Title",
+      PLACEHOLDER: "Enter event title",
+      TYPE: "text",
+    },
+    DESCRIPTION: {
+      NAME: "description",
+      LABEL: "Description",
+      PLACEHOLDER: "Enter event description (optional)",
+      TYPE: "textarea",
+    },
+    START_DATE: {
+      NAME: "start",
+      LABEL: "Start Date & Time",
+      TYPE: "datetime-local",
+    },
+    END_DATE: {
+      NAME: "end",
+      LABEL: "End Date & Time",
+      TYPE: "datetime-local",
+    },
+    ALL_DAY: {
+      NAME: "allDay",
+      LABEL: "All Day Event",
+      TYPE: "checkbox",
+    },
+    CALENDAR: {
+      NAME: "calendarId",
+      LABEL: "Calendar",
+      PLACEHOLDER: "Select a calendar",
+      TYPE: "select",
+    },
+    COLOR: {
+      NAME: "color",
+      LABEL: "Event Color",
+      TYPE: "color",
+    },
+    RECURRENCE: {
+      NAME: "recurrence",
+      LABEL: "Recurrence",
+      TYPE: "select",
+      OPTIONS: {
+        NONE: { value: "none", label: "No Recurrence" },
+        DAILY: { value: "daily", label: "Daily" },
+        WEEKLY: { value: "weekly", label: "Weekly" },
+        MONTHLY: { value: "monthly", label: "Monthly" },
+        YEARLY: { value: "yearly", label: "Yearly" },
+        CUSTOM: { value: "custom", label: "Custom" },
+      },
+    },
+  },
+  BUTTONS: {
+    CREATE: "Create Event",
+    UPDATE: "Update Event",
+    CANCEL: "Cancel",
+    DELETE: "Delete",
+    EXPORT: "Export Event",
+    SAVING: "Saving...",
+  },
+} as const
+
+export const CALENDAR_FORM = {
+  FIELDS: {
+    NAME: {
+      NAME: "name",
+      LABEL: "Calendar Name",
+      PLACEHOLDER: "e.g., Work, Personal, Family",
+      TYPE: "text",
+    },
+    DESCRIPTION: {
+      NAME: "description",
+      LABEL: "Description",
+      PLACEHOLDER: "Optional description for this calendar",
+      TYPE: "textarea",
+    },
+    COLOR: {
+      NAME: "color",
+      LABEL: "Calendar Color",
+      TYPE: "color",
+    },
+  },
+  BUTTONS: {
+    CREATE: "Create Calendar",
+    UPDATE: "Update Calendar",
+    CANCEL: "Cancel",
+    DELETE: "Delete",
+    SAVING: "Saving...",
+  },
+} as const
+
+// Page constants
+export const PAGES = {
+  HOME: "/",
+  DASHBOARD: "/dashboard",
+} as const
+
+export const DASHBOARD_PAGE = {
+  TITLE: "Dashboard",
+  SECTIONS: {
+    HEADER: "Your Events",
+    CALENDAR_SIDEBAR: "My Calendars",
+    TABS: {
+      CALENDAR: "Calendar",
+      LIST: "List",
+    },
+  },
+} as const
+
+export const COMMON_BUTTONS = {
+  SAVE: "Save",
+  CANCEL: "Cancel",
+  DELETE: "Delete",
+  EDIT: "Edit",
+  CREATE: "Create",
+  UPDATE: "Update",
+  EXPORT: "Export",
+  LOADING: "Loading...",
+  SAVING: "Saving...",
+  DELETING: "Deleting...",
+  LOGOUT: "Logout",
+} as const
