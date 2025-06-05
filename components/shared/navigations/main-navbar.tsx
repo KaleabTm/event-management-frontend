@@ -14,7 +14,7 @@ import { useCalendars } from "@/actions/query/calendars"
 import { useLogout } from "@/actions/query/auth"
 import { useCalendarVisibility } from "@/hooks/use-calendar-visibility"
 import { exportCalendar, generateICSContent, downloadICSFile } from "@/lib/ics-export"
-import { COMMON_BUTTONS } from "@/constants/forms"
+import { COMMON_BUTTONS } from "@/constants/colors"
 import { Calendar, LogOut, Download, ChevronDown, Settings } from "lucide-react"
 
 interface MainNavbarProps {
