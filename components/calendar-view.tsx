@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { useEvents } from "@/actions/query/events"
 import { useCalendars } from "@/actions/query/calendars"
 import { useCalendarVisibility } from "@/hooks/use-calendar-visibility"
+import LoadingSpinner from "./shared/ui/loading-spinner"
 
 // Import FullCalendar CSS
 import "@fullcalendar/common/main.css"
@@ -73,11 +74,8 @@ export default function CalendarView({ onEditEvent }: CalendarViewProps) {
   if (isLoading) {
     return (
       <Card>
-        <CardContent className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-500">Loading calendar...</p>
-          </div>
+        <CardContent className="py-12">
+          <LoadingSpinner text="Loading calendar..." />
         </CardContent>
       </Card>
     )

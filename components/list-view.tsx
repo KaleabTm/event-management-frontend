@@ -3,9 +3,11 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { useEvents, useDeleteEvent } from "@/hooks/use-events"
-import { useCalendars } from "@/hooks/use-calendars"
+import { useEvents, useDeleteEvent } from "@/actions/query/events"
+import { useCalendars } from "@/actions/query/calendars"
 import { useCalendarVisibility } from "@/hooks/use-calendar-visibility"
+import LoadingSpinner from "./shared/ui/loading-spinner"
+import EmptyState from "./shared/ui/empty-state"
 import { Calendar, Clock, Edit, Trash2, Repeat, Download } from "lucide-react"
 import { exportSingleEvent } from "@/lib/ics-export"
 
@@ -75,11 +77,8 @@ export default function ListView({ onEditEvent }: ListViewProps) {
   if (isLoading) {
     return (
       <Card>
-        <CardContent className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-500">Loading events...</p>
-          </div>
+        <CardContent className="py-12">
+          <LoadingSpinner text="Loading events..." />
         </CardContent>
       </Card>
     )
@@ -88,12 +87,12 @@ export default function ListView({ onEditEvent }: ListViewProps) {
   if (upcomingEvents.length === 0) {
     return (
       <Card>
-        <CardContent className="flex flex-col items-center justify-center py-12">
-          <Calendar className="h-12 w-12 text-gray-400 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No upcoming events</h3>
-          <p className="text-gray-500 text-center">
-            Create your first event to get started with managing your schedule.
-          </p>
+        <CardContent>
+          <EmptyState
+            icon={Calendar}
+            title="No upcoming events"
+            description="Create your first event to get started with managing your schedule."
+          />
         </CardContent>
       </Card>
     )

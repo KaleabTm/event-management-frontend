@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { useCalendars, useDeleteCalendar } from "@/actions/query/calendars"
 import { useCalendarVisibility } from "@/hooks/use-calendar-visibility"
 import { exportCalendar } from "@/lib/ics-export"
-import CalendarModal from "./calendar-modal"
+import CalendarModal from "../../calendar-modal"
 import { Plus, Download, Edit, Trash2, Eye, EyeOff } from "lucide-react"
 
 export default function CalendarSidebar() {
@@ -101,6 +101,7 @@ export default function CalendarSidebar() {
                 variant="ghost"
                 onClick={() => toggleCalendarVisibility(calendar.id)}
                 className="h-6 w-6 p-0"
+                title={visibleCalendarIds.includes(calendar.id) ? "Hide calendar" : "Show calendar"}
               >
                 {visibleCalendarIds.includes(calendar.id) ? (
                   <Eye className="h-3 w-3" />
@@ -108,10 +109,22 @@ export default function CalendarSidebar() {
                   <EyeOff className="h-3 w-3" />
                 )}
               </Button>
-              <Button size="sm" variant="ghost" onClick={() => handleExportCalendar(calendar)} className="h-6 w-6 p-0">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => handleExportCalendar(calendar)}
+                className="h-6 w-6 p-0"
+                title="Export calendar"
+              >
                 <Download className="h-3 w-3" />
               </Button>
-              <Button size="sm" variant="ghost" onClick={() => handleEditCalendar(calendar)} className="h-6 w-6 p-0">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => handleEditCalendar(calendar)}
+                className="h-6 w-6 p-0"
+                title="Edit calendar"
+              >
                 <Edit className="h-3 w-3" />
               </Button>
               <Button
@@ -120,6 +133,7 @@ export default function CalendarSidebar() {
                 onClick={() => handleDeleteCalendar(calendar.id)}
                 className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
                 disabled={deleteCalendarMutation.isPending}
+                title="Delete calendar"
               >
                 <Trash2 className="h-3 w-3" />
               </Button>
