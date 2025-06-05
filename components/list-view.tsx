@@ -3,7 +3,9 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { useEventStore } from "@/lib/store"
+import { useEvents, useDeleteEvent } from "@/hooks/use-events"
+import { useCalendars } from "@/hooks/use-calendars"
+import { useCalendarVisibility } from "@/hooks/use-calendar-visibility"
 import { Calendar, Clock, Edit, Trash2, Repeat, Download } from "lucide-react"
 import { exportSingleEvent } from "@/lib/ics-export"
 
@@ -12,8 +14,15 @@ interface ListViewProps {
 }
 
 export default function ListView({ onEditEvent }: ListViewProps) {
-  const { getVisibleEvents, calendars, deleteEvent, isLoading } = useEventStore()
-  const visibleEvents = getVisibleEvents()
+  const { data: events = [], isLoading: eventsLoading } = useEvents()
+  const { data: calendars = [], isLoading: calendarsLoading } = useCalendars()
+  const { visibleCalendarIds } = useCalendarVisibility()
+  const deleteEventMutation = useDeleteEvent()
+
+  const isLoading = eventsLoading || calendarsLoading || deleteEventMutation.isPending
+
+  // Filter visible events
+  const visibleEvents = events.filter((event) => visibleCalendarIds.includes(event.calendarId))
 
   // Sort events by start date
   const sortedEvents = [...visibleEvents].sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
@@ -59,7 +68,7 @@ export default function ListView({ onEditEvent }: ListViewProps) {
 
   const handleDelete = async (eventId: string) => {
     if (confirm("Are you sure you want to delete this event?")) {
-      await deleteEvent(eventId)
+      deleteEventMutation.mutate(eventId)
     }
   }
 
@@ -153,7 +162,12 @@ export default function ListView({ onEditEvent }: ListViewProps) {
                 <Button variant="outline" size="sm" onClick={() => onEditEvent(event)}>
                   <Edit className="h-4 w-4" />
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => handleDelete(event.id)}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDelete(event.id)}
+                  disabled={deleteEventMutation.isPending}
+                >
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>

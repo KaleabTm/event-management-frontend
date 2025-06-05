@@ -1,13 +1,15 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { signOut } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { useEventStore } from "@/hooks/use-event-store"
-import { exportCalendar, generateICSContent, downloadICSFile } from "@/app/lib/ics-export"
+import { useEvents } from "@/hooks/use-events"
+import { useCalendars } from "@/hooks/use-calendars"
+import { useCalendarVisibility } from "@/hooks/use-calendar-visibility"
+import { exportCalendar, generateICSContent, downloadICSFile } from "@/lib/ics-export"
 import CalendarView from "./calendar-view"
 import ListView from "./list-view"
 import EventModal from "./event-modal"
@@ -17,12 +19,11 @@ import { Plus, LogOut, Calendar, List, Download, ChevronDown } from "lucide-reac
 export default function Dashboard() {
   const [isEventModalOpen, setIsEventModalOpen] = useState(false)
   const [editingEvent, setEditingEvent] = useState(null)
-  const { fetchEvents, fetchCalendars, error, setError, calendars, getVisibleEvents } = useEventStore()
+  const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    fetchEvents()
-    fetchCalendars()
-  }, [fetchEvents, fetchCalendars])
+  const { data: events = [] } = useEvents()
+  const { data: calendars = [] } = useCalendars()
+  const { visibleCalendarIds } = useCalendarVisibility()
 
   const handleCreateEvent = () => {
     setEditingEvent(null)
@@ -39,22 +40,22 @@ export default function Dashboard() {
   }
 
   const handleExportAll = () => {
-    const allEvents = getVisibleEvents()
-    if (allEvents.length === 0) {
-      alert("No events to export.")
+    const visibleEvents = events.filter((event) => visibleCalendarIds.includes(event.calendarId))
+    if (visibleEvents.length === 0) {
+      setError("No events to export.")
       return
     }
-    const icsContent = generateICSContent(allEvents, "All Events")
+    const icsContent = generateICSContent(visibleEvents, "All Events")
     downloadICSFile(icsContent, "all_events.ics")
   }
 
   const handleExportByCalendar = (calendar: any) => {
-    const events = getVisibleEvents().filter((e) => e.calendarId === calendar.id)
-    if (events.length === 0) {
-      alert(`No events in ${calendar.name} to export.`)
+    const calendarEvents = events.filter((e) => e.calendarId === calendar.id)
+    if (calendarEvents.length === 0) {
+      setError(`No events in ${calendar.name} to export.`)
       return
     }
-    exportCalendar(events, calendar.name)
+    exportCalendar(calendarEvents, calendar.name)
   }
 
   return (

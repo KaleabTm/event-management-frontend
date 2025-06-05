@@ -6,7 +6,9 @@ import dayGridPlugin from "@fullcalendar/daygrid"
 import timeGridPlugin from "@fullcalendar/timegrid"
 import interactionPlugin from "@fullcalendar/interaction"
 import { Card, CardContent } from "@/components/ui/card"
-import { useEventStore } from "@/lib/store"
+import { useEvents } from "@/hooks/use-events"
+import { useCalendars } from "@/hooks/use-calendars"
+import { useCalendarVisibility } from "@/hooks/use-calendar-visibility"
 
 // Import FullCalendar CSS
 import "@fullcalendar/common/main.css"
@@ -19,9 +21,14 @@ interface CalendarViewProps {
 
 export default function CalendarView({ onEditEvent }: CalendarViewProps) {
   const calendarRef = useRef<FullCalendar>(null)
-  const { getVisibleEvents, calendars, isLoading } = useEventStore()
+  const { data: events = [], isLoading: eventsLoading } = useEvents()
+  const { data: calendars = [], isLoading: calendarsLoading } = useCalendars()
+  const { visibleCalendarIds } = useCalendarVisibility()
 
-  const visibleEvents = getVisibleEvents()
+  const isLoading = eventsLoading || calendarsLoading
+
+  // Filter visible events
+  const visibleEvents = events.filter((event) => visibleCalendarIds.includes(event.calendarId))
 
   // Convert events to FullCalendar format
   const calendarEvents = visibleEvents.map((event) => {
@@ -51,7 +58,7 @@ export default function CalendarView({ onEditEvent }: CalendarViewProps) {
 
   const handleDateSelect = (selectInfo: any) => {
     // Get the first visible calendar as default
-    const defaultCalendar = calendars.find((c) => c.isVisible)
+    const defaultCalendar = calendars.find((c) => visibleCalendarIds.includes(c.id))
 
     // Create new event with selected date/time
     const newEvent = {

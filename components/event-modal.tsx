@@ -12,7 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Switch } from "@/components/ui/switch"
 import { eventSchema, type EventFormData } from "@/lib/validations/event"
-import { useEventStore } from "@/lib/store"
+import { useCreateEvent, useUpdateEvent } from "@/hooks/use-events"
+import { useCalendars } from "@/hooks/use-calendars"
 import { exportSingleEvent } from "@/lib/ics-export"
 import { Download } from "lucide-react"
 
@@ -35,7 +36,9 @@ const weekdays = [
 ]
 
 export default function EventModal({ isOpen, onClose, event }: EventModalProps) {
-  const { addEvent, updateEvent, calendars } = useEventStore()
+  const { data: calendars = [] } = useCalendars()
+  const createEventMutation = useCreateEvent()
+  const updateEventMutation = useUpdateEvent()
 
   const {
     register,
@@ -114,15 +117,17 @@ export default function EventModal({ isOpen, onClose, event }: EventModalProps) 
   const onSubmit = async (data: EventFormData) => {
     try {
       if (event?.id) {
-        await updateEvent(event.id, data)
+        await updateEventMutation.mutateAsync({ id: event.id, eventData: data })
       } else {
-        await addEvent(data)
+        await createEventMutation.mutateAsync(data)
       }
       onClose()
     } catch (error) {
       console.error("Failed to save event:", error)
     }
   }
+
+  const isPending = createEventMutation.isPending || updateEventMutation.isPending
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -355,8 +360,8 @@ export default function EventModal({ isOpen, onClose, event }: EventModalProps) 
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Saving..." : event?.id ? "Update Event" : "Create Event"}
+              <Button type="submit" disabled={isSubmitting || isPending}>
+                {isSubmitting || isPending ? "Saving..." : event?.id ? "Update Event" : "Create Event"}
               </Button>
             </div>
           </div>

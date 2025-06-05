@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { calendarSchema, type CalendarFormData } from "@/lib/validations/event"
-import { useEventStore } from "@/lib/store"
+import { useCreateCalendar, useUpdateCalendar } from "@/hooks/use-calendars"
+import { useCalendarVisibility } from "@/hooks/use-calendar-visibility"
 
 interface CalendarModalProps {
   isOpen: boolean
@@ -20,7 +21,9 @@ interface CalendarModalProps {
 const colors = ["#3B82F6", "#EF4444", "#10B981", "#F59E0B", "#8B5CF6", "#EC4899", "#06B6D4", "#84CC16"]
 
 export default function CalendarModal({ isOpen, onClose, calendar }: CalendarModalProps) {
-  const { addCalendar, updateCalendar } = useEventStore()
+  const createCalendarMutation = useCreateCalendar()
+  const updateCalendarMutation = useUpdateCalendar()
+  const { setCalendarVisibility } = useCalendarVisibility()
 
   const {
     register,
@@ -59,9 +62,15 @@ export default function CalendarModal({ isOpen, onClose, calendar }: CalendarMod
   const onSubmit = async (data: CalendarFormData) => {
     try {
       if (calendar?.id) {
-        await updateCalendar(calendar.id, data)
+        await updateCalendarMutation.mutateAsync({ id: calendar.id, calendarData: data })
+        // Update visibility state
+        setCalendarVisibility(calendar.id, data.isVisible)
       } else {
-        await addCalendar(data)
+        const newCalendar = await createCalendarMutation.mutateAsync(data)
+        // Set new calendar to visible
+        if (data.isVisible && newCalendar.id) {
+          setCalendarVisibility(newCalendar.id, true)
+        }
       }
       onClose()
     } catch (error) {
@@ -125,8 +134,15 @@ export default function CalendarModal({ isOpen, onClose, calendar }: CalendarMod
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Saving..." : calendar?.id ? "Update Calendar" : "Create Calendar"}
+            <Button
+              type="submit"
+              disabled={isSubmitting || createCalendarMutation.isPending || updateCalendarMutation.isPending}
+            >
+              {isSubmitting || createCalendarMutation.isPending || updateCalendarMutation.isPending
+                ? "Saving..."
+                : calendar?.id
+                  ? "Update Calendar"
+                  : "Create Calendar"}
             </Button>
           </div>
         </form>
