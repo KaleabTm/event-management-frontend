@@ -6,7 +6,10 @@ import dayGridPlugin from "@fullcalendar/daygrid"
 import timeGridPlugin from "@fullcalendar/timegrid"
 import interactionPlugin from "@fullcalendar/interaction"
 import { Card, CardContent } from "@/components/ui/card"
-import { useEventStore } from "@/lib/store"
+import { useEvents } from "@/actions/query/events"
+import { useCalendars } from "@/actions/query/calendars"
+import { useCalendarVisibility } from "@/hooks/use-calendar-visibility"
+import LoadingSpinner from "./shared/ui/loading-spinner"
 
 // Import FullCalendar CSS
 import "@fullcalendar/common/main.css"
@@ -19,36 +22,51 @@ interface CalendarViewProps {
 
 export default function CalendarView({ onEditEvent }: CalendarViewProps) {
   const calendarRef = useRef<FullCalendar>(null)
-  const { events, isLoading } = useEventStore()
+  const { data: events = [], isLoading: eventsLoading } = useEvents()
+  const { data: calendars = [], isLoading: calendarsLoading } = useCalendars()
+  const { visibleCalendarIds } = useCalendarVisibility()
+
+  const isLoading = eventsLoading || calendarsLoading
+
+  // Filter visible events
+  const visibleEvents = events.filter((event) => visibleCalendarIds.includes(event.calendarId))
 
   // Convert events to FullCalendar format
-  const calendarEvents = events.map((event) => ({
-    id: event.id,
-    title: event.title,
-    start: event.start,
-    end: event.end,
-    allDay: event.allDay,
-    backgroundColor: event.color,
-    borderColor: event.color,
-    extendedProps: {
-      description: event.description,
-      recurrence: event.recurrence,
-    },
-  }))
+  const calendarEvents = visibleEvents.map((event) => {
+    const calendar = calendars.find((c) => c.id === event.calendarId)
+    return {
+      id: event.id,
+      title: event.title,
+      start: event.start,
+      end: event.end,
+      allDay: event.allDay,
+      backgroundColor: calendar?.color || event.color,
+      borderColor: calendar?.color || event.color,
+      extendedProps: {
+        description: event.description,
+        recurrence: event.recurrence,
+        calendarId: event.calendarId,
+      },
+    }
+  })
 
   const handleEventClick = (info: any) => {
-    const event = events.find((e) => e.id === info.event.id)
+    const event = visibleEvents.find((e) => e.id === info.event.id)
     if (event) {
       onEditEvent(event)
     }
   }
 
   const handleDateSelect = (selectInfo: any) => {
+    // Get the first visible calendar as default
+    const defaultCalendar = calendars.find((c) => visibleCalendarIds.includes(c.id))
+
     // Create new event with selected date/time
     const newEvent = {
       start: selectInfo.start.toISOString(),
       end: selectInfo.end.toISOString(),
       allDay: selectInfo.allDay,
+      calendarId: defaultCalendar?.id || calendars[0]?.id || "",
     }
     onEditEvent(newEvent)
   }
@@ -56,11 +74,8 @@ export default function CalendarView({ onEditEvent }: CalendarViewProps) {
   if (isLoading) {
     return (
       <Card>
-        <CardContent className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-500">Loading calendar...</p>
-          </div>
+        <CardContent className="py-12">
+          <LoadingSpinner text="Loading calendar..." />
         </CardContent>
       </Card>
     )

@@ -3,18 +3,31 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { useEventStore } from "@/lib/store"
-import { Calendar, Clock, Edit, Trash2, Repeat } from "lucide-react"
+import { useEvents, useDeleteEvent } from "@/actions/query/events"
+import { useCalendars } from "@/actions/query/calendars"
+import { useCalendarVisibility } from "@/hooks/use-calendar-visibility"
+import LoadingSpinner from "./shared/ui/loading-spinner"
+import EmptyState from "./shared/ui/empty-state"
+import { Calendar, Clock, Edit, Trash2, Repeat, Download } from "lucide-react"
+import { exportSingleEvent } from "@/lib/ics-export"
 
 interface ListViewProps {
   onEditEvent: (event: any) => void
 }
 
 export default function ListView({ onEditEvent }: ListViewProps) {
-  const { events, deleteEvent, isLoading } = useEventStore()
+  const { data: events = [], isLoading: eventsLoading } = useEvents()
+  const { data: calendars = [], isLoading: calendarsLoading } = useCalendars()
+  const { visibleCalendarIds } = useCalendarVisibility()
+  const deleteEventMutation = useDeleteEvent()
+
+  const isLoading = eventsLoading || calendarsLoading || deleteEventMutation.isPending
+
+  // Filter visible events
+  const visibleEvents = events.filter((event) => visibleCalendarIds.includes(event.calendarId))
 
   // Sort events by start date
-  const sortedEvents = [...events].sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
+  const sortedEvents = [...visibleEvents].sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
 
   // Filter upcoming events
   const upcomingEvents = sortedEvents.filter((event) => new Date(event.start) >= new Date()).slice(0, 20)
@@ -57,18 +70,15 @@ export default function ListView({ onEditEvent }: ListViewProps) {
 
   const handleDelete = async (eventId: string) => {
     if (confirm("Are you sure you want to delete this event?")) {
-      await deleteEvent(eventId)
+      deleteEventMutation.mutate(eventId)
     }
   }
 
   if (isLoading) {
     return (
       <Card>
-        <CardContent className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-500">Loading events...</p>
-          </div>
+        <CardContent className="py-12">
+          <LoadingSpinner text="Loading events..." />
         </CardContent>
       </Card>
     )
@@ -77,12 +87,12 @@ export default function ListView({ onEditEvent }: ListViewProps) {
   if (upcomingEvents.length === 0) {
     return (
       <Card>
-        <CardContent className="flex flex-col items-center justify-center py-12">
-          <Calendar className="h-12 w-12 text-gray-400 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No upcoming events</h3>
-          <p className="text-gray-500 text-center">
-            Create your first event to get started with managing your schedule.
-          </p>
+        <CardContent>
+          <EmptyState
+            icon={Calendar}
+            title="No upcoming events"
+            description="Create your first event to get started with managing your schedule."
+          />
         </CardContent>
       </Card>
     )
@@ -105,7 +115,18 @@ export default function ListView({ onEditEvent }: ListViewProps) {
             >
               <div className="flex-1">
                 <div className="flex items-start justify-between mb-2">
-                  <h3 className="font-medium text-gray-900">{event.title}</h3>
+                  <div className="flex items-center space-x-2">
+                    <h3 className="font-medium text-gray-900">{event.title}</h3>
+                    {(() => {
+                      const calendar = calendars.find((c) => c.id === event.calendarId)
+                      return calendar ? (
+                        <Badge variant="outline" className="text-xs flex items-center space-x-1">
+                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: calendar.color }} />
+                          <span>{calendar.name}</span>
+                        </Badge>
+                      ) : null
+                    })()}
+                  </div>
                   <div className="w-3 h-3 rounded-full ml-2 mt-1" style={{ backgroundColor: event.color }} />
                 </div>
 
@@ -134,10 +155,18 @@ export default function ListView({ onEditEvent }: ListViewProps) {
               </div>
 
               <div className="flex items-center space-x-2 ml-4">
+                <Button variant="outline" size="sm" onClick={() => exportSingleEvent(event)} title="Export event">
+                  <Download className="h-4 w-4" />
+                </Button>
                 <Button variant="outline" size="sm" onClick={() => onEditEvent(event)}>
                   <Edit className="h-4 w-4" />
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => handleDelete(event.id)}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDelete(event.id)}
+                  disabled={deleteEventMutation.isPending}
+                >
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>

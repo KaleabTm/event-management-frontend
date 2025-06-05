@@ -12,7 +12,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Switch } from "@/components/ui/switch"
 import { eventSchema, type EventFormData } from "@/lib/validations/event"
-import { useEventStore } from "@/lib/store"
+import { useCreateEvent, useUpdateEvent } from "@/actions/query/events"
+import { useCalendars } from "@/actions/query/calendars"
+import { useToast } from "@/hooks/use-toast"
+import { exportSingleEvent } from "@/lib/ics-export"
+import { Download } from "lucide-react"
+import { EVENT_FORM } from "@/constants/forms"
 
 interface EventModalProps {
   isOpen: boolean
@@ -33,7 +38,10 @@ const weekdays = [
 ]
 
 export default function EventModal({ isOpen, onClose, event }: EventModalProps) {
-  const { addEvent, updateEvent } = useEventStore()
+  const { toast } = useToast()
+  const { data: calendars = [] } = useCalendars()
+  const createEventMutation = useCreateEvent()
+  const updateEventMutation = useUpdateEvent()
 
   const {
     register,
@@ -52,6 +60,7 @@ export default function EventModal({ isOpen, onClose, event }: EventModalProps) 
       end: new Date(Date.now() + 60 * 60 * 1000).toISOString().slice(0, 16),
       allDay: false,
       color: colors[0],
+      calendarId: "",
       recurrence: {
         type: "none",
         interval: 1,
@@ -77,6 +86,7 @@ export default function EventModal({ isOpen, onClose, event }: EventModalProps) 
           : new Date(Date.now() + 60 * 60 * 1000).toISOString().slice(0, 16),
         allDay: event.allDay || false,
         color: event.color || colors[0],
+        calendarId: event.calendarId || calendars[0]?.id || "",
         recurrence: event.recurrence || {
           type: "none",
           interval: 1,
@@ -94,6 +104,7 @@ export default function EventModal({ isOpen, onClose, event }: EventModalProps) 
         end: new Date(Date.now() + 60 * 60 * 1000).toISOString().slice(0, 16),
         allDay: false,
         color: colors[0],
+        calendarId: calendars[0]?.id || "",
         recurrence: {
           type: "none",
           interval: 1,
@@ -104,20 +115,34 @@ export default function EventModal({ isOpen, onClose, event }: EventModalProps) 
         },
       })
     }
-  }, [event, reset, isOpen])
+  }, [event, reset, isOpen, calendars])
 
   const onSubmit = async (data: EventFormData) => {
     try {
       if (event?.id) {
-        await updateEvent(event.id, data)
+        await updateEventMutation.mutateAsync({ id: event.id, eventData: data })
+        toast({
+          title: "Event updated",
+          description: "Your event has been updated successfully.",
+        })
       } else {
-        await addEvent(data)
+        await createEventMutation.mutateAsync(data)
+        toast({
+          title: "Event created",
+          description: "Your event has been created successfully.",
+        })
       }
       onClose()
     } catch (error) {
-      console.error("Failed to save event:", error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to save event",
+        variant: "destructive",
+      })
     }
   }
+
+  const isPending = createEventMutation.isPending || updateEventMutation.isPending
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -129,15 +154,51 @@ export default function EventModal({ isOpen, onClose, event }: EventModalProps) 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           {/* Basic Information */}
           <div className="space-y-4">
-            <div>
-              <Label htmlFor="title">Event Title *</Label>
-              <Input id="title" {...register("title")} className={errors.title ? "border-red-500" : ""} />
-              {errors.title && <p className="text-sm text-red-500 mt-1">{errors.title.message}</p>}
+            <div className="space-y-2">
+              <Label htmlFor="title">{EVENT_FORM.FIELDS.TITLE.LABEL} *</Label>
+              <Input
+                id="title"
+                placeholder={EVENT_FORM.FIELDS.TITLE.PLACEHOLDER}
+                {...register("title")}
+                className={errors.title ? "border-destructive" : ""}
+              />
+              {errors.title && <p className="text-sm text-destructive">{errors.title.message}</p>}
             </div>
 
-            <div>
-              <Label htmlFor="description">Description</Label>
-              <Textarea id="description" {...register("description")} rows={3} />
+            <div className="space-y-2">
+              <Label htmlFor="description">{EVENT_FORM.FIELDS.DESCRIPTION.LABEL}</Label>
+              <Textarea
+                id="description"
+                placeholder={EVENT_FORM.FIELDS.DESCRIPTION.PLACEHOLDER}
+                {...register("description")}
+                rows={3}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>{EVENT_FORM.FIELDS.CALENDAR.LABEL} *</Label>
+              <Controller
+                name="calendarId"
+                control={control}
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className={errors.calendarId ? "border-destructive" : ""}>
+                      <SelectValue placeholder={EVENT_FORM.FIELDS.CALENDAR.PLACEHOLDER} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {calendars.map((calendar) => (
+                        <SelectItem key={calendar.id} value={calendar.id}>
+                          <div className="flex items-center space-x-2">
+                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: calendar.color }} />
+                            <span>{calendar.name}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.calendarId && <p className="text-sm text-destructive">{errors.calendarId.message}</p>}
             </div>
           </div>
 
@@ -148,38 +209,42 @@ export default function EventModal({ isOpen, onClose, event }: EventModalProps) 
               control={control}
               render={({ field }) => <Switch id="allDay" checked={field.value} onCheckedChange={field.onChange} />}
             />
-            <Label htmlFor="allDay">All Day Event</Label>
+            <Label htmlFor="allDay">{EVENT_FORM.FIELDS.ALL_DAY.LABEL}</Label>
           </div>
 
           {/* Date and Time */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="start">Start {watchAllDay ? "Date" : "Date & Time"} *</Label>
+            <div className="space-y-2">
+              <Label htmlFor="start">
+                {EVENT_FORM.FIELDS.START_DATE.LABEL} {watchAllDay ? "(Date)" : "(Date & Time)"} *
+              </Label>
               <Input
                 id="start"
                 type={watchAllDay ? "date" : "datetime-local"}
                 {...register("start")}
-                className={errors.start ? "border-red-500" : ""}
+                className={errors.start ? "border-destructive" : ""}
               />
-              {errors.start && <p className="text-sm text-red-500 mt-1">{errors.start.message}</p>}
+              {errors.start && <p className="text-sm text-destructive">{errors.start.message}</p>}
             </div>
 
-            <div>
-              <Label htmlFor="end">End {watchAllDay ? "Date" : "Date & Time"} *</Label>
+            <div className="space-y-2">
+              <Label htmlFor="end">
+                {EVENT_FORM.FIELDS.END_DATE.LABEL} {watchAllDay ? "(Date)" : "(Date & Time)"} *
+              </Label>
               <Input
                 id="end"
                 type={watchAllDay ? "date" : "datetime-local"}
                 {...register("end")}
-                className={errors.end ? "border-red-500" : ""}
+                className={errors.end ? "border-destructive" : ""}
               />
-              {errors.end && <p className="text-sm text-red-500 mt-1">{errors.end.message}</p>}
+              {errors.end && <p className="text-sm text-destructive">{errors.end.message}</p>}
             </div>
           </div>
 
           {/* Color Selection */}
-          <div>
-            <Label>Event Color</Label>
-            <div className="flex space-x-2 mt-2">
+          <div className="space-y-2">
+            <Label>{EVENT_FORM.FIELDS.COLOR.LABEL}</Label>
+            <div className="flex space-x-2">
               {colors.map((color) => (
                 <Controller
                   key={color}
@@ -188,8 +253,8 @@ export default function EventModal({ isOpen, onClose, event }: EventModalProps) 
                   render={({ field }) => (
                     <button
                       type="button"
-                      className={`w-8 h-8 rounded-full border-2 ${
-                        field.value === color ? "border-gray-800" : "border-gray-300"
+                      className={`w-8 h-8 rounded-full border-2 transition-all ${
+                        field.value === color ? "border-foreground scale-110" : "border-border hover:scale-105"
                       }`}
                       style={{ backgroundColor: color }}
                       onClick={() => field.onChange(color)}
@@ -202,8 +267,8 @@ export default function EventModal({ isOpen, onClose, event }: EventModalProps) 
 
           {/* Recurrence Settings */}
           <div className="space-y-4">
-            <div>
-              <Label>Recurrence</Label>
+            <div className="space-y-2">
+              <Label>{EVENT_FORM.FIELDS.RECURRENCE.LABEL}</Label>
               <Controller
                 name="recurrence.type"
                 control={control}
@@ -213,12 +278,11 @@ export default function EventModal({ isOpen, onClose, event }: EventModalProps) 
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">No Recurrence</SelectItem>
-                      <SelectItem value="daily">Daily</SelectItem>
-                      <SelectItem value="weekly">Weekly</SelectItem>
-                      <SelectItem value="monthly">Monthly</SelectItem>
-                      <SelectItem value="yearly">Yearly</SelectItem>
-                      <SelectItem value="custom">Custom</SelectItem>
+                      {Object.entries(EVENT_FORM.FIELDS.RECURRENCE.OPTIONS).map(([key, option]) => (
+                        <SelectItem key={key} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 )}
@@ -226,7 +290,7 @@ export default function EventModal({ isOpen, onClose, event }: EventModalProps) 
             </div>
 
             {watchRecurrenceType !== "none" && watchRecurrenceType !== "custom" && (
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="interval">Repeat Every</Label>
                 <div className="flex items-center space-x-2">
                   <Input
@@ -237,7 +301,7 @@ export default function EventModal({ isOpen, onClose, event }: EventModalProps) 
                     {...register("recurrence.interval", { valueAsNumber: true })}
                     className="w-20"
                   />
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm text-muted-foreground">
                     {watchRecurrenceType === "daily" && "day(s)"}
                     {watchRecurrenceType === "weekly" && "week(s)"}
                     {watchRecurrenceType === "monthly" && "month(s)"}
@@ -248,9 +312,9 @@ export default function EventModal({ isOpen, onClose, event }: EventModalProps) 
             )}
 
             {watchRecurrenceType === "custom" && (
-              <div>
+              <div className="space-y-2">
                 <Label>Days of the Week</Label>
-                <div className="grid grid-cols-2 gap-2 mt-2">
+                <div className="grid grid-cols-2 gap-2">
                   {weekdays.map((day) => (
                     <Controller
                       key={day.value}
@@ -277,14 +341,11 @@ export default function EventModal({ isOpen, onClose, event }: EventModalProps) 
                     />
                   ))}
                 </div>
-                {errors.recurrence?.weekdays && (
-                  <p className="text-sm text-red-500 mt-1">{errors.recurrence.weekdays.message}</p>
-                )}
               </div>
             )}
 
             {watchRecurrenceType === "monthly" && (
-              <div>
+              <div className="space-y-2">
                 <Label>Monthly Recurrence Type</Label>
                 <Controller
                   name="recurrence.monthlyType"
@@ -306,13 +367,37 @@ export default function EventModal({ isOpen, onClose, event }: EventModalProps) 
           </div>
 
           {/* Form Actions */}
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Saving..." : event?.id ? "Update Event" : "Create Event"}
-            </Button>
+          <div className="flex justify-between items-center pt-4 border-t">
+            {event?.id && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  const eventData = { ...event, ...watch() }
+                  exportSingleEvent(eventData)
+                  toast({
+                    title: "Event exported",
+                    description: "Event has been exported successfully.",
+                  })
+                }}
+                className="flex items-center"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                {EVENT_FORM.BUTTONS.EXPORT}
+              </Button>
+            )}
+            <div className="flex space-x-2 ml-auto">
+              <Button type="button" variant="outline" onClick={onClose}>
+                {EVENT_FORM.BUTTONS.CANCEL}
+              </Button>
+              <Button type="submit" disabled={isSubmitting || isPending}>
+                {isSubmitting || isPending
+                  ? EVENT_FORM.BUTTONS.SAVING
+                  : event?.id
+                    ? EVENT_FORM.BUTTONS.UPDATE
+                    : EVENT_FORM.BUTTONS.CREATE}
+              </Button>
+            </div>
           </div>
         </form>
       </DialogContent>
