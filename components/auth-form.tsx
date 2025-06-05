@@ -12,7 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { authSchema } from "@/lib/validations/event"
 import { useLogin, useRegister } from "@/actions/query/auth"
 import { PAGES } from "@/constants/pages"
-import { FORM_LABELS, FORM_PLACEHOLDERS, BUTTON_LABELS } from "@/constants/forms"
+import { AUTH_FORM } from "@/constants/forms"
 import type { AuthFormData } from "@/types/auth"
 
 export default function AuthForm() {
@@ -63,7 +63,7 @@ export default function AuthForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{isLogin ? BUTTON_LABELS.LOGIN : BUTTON_LABELS.REGISTER}</CardTitle>
+        <CardTitle>{isLogin ? AUTH_FORM.BUTTONS.LOGIN : AUTH_FORM.BUTTONS.REGISTER}</CardTitle>
         <CardDescription>
           {isLogin ? "Enter your credentials to access your events" : "Create a new account to get started"}
         </CardDescription>
@@ -77,11 +77,11 @@ export default function AuthForm() {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="email">{FORM_LABELS.EMAIL}</Label>
+            <Label htmlFor={AUTH_FORM.FIELDS.EMAIL.NAME}>{AUTH_FORM.FIELDS.EMAIL.LABEL}</Label>
             <Input
-              id="email"
-              type="email"
-              placeholder={FORM_PLACEHOLDERS.EMAIL}
+              id={AUTH_FORM.FIELDS.EMAIL.NAME}
+              type={AUTH_FORM.FIELDS.EMAIL.TYPE}
+              placeholder={AUTH_FORM.FIELDS.EMAIL.PLACEHOLDER}
               {...register("email")}
               className={errors.email ? "border-red-500" : ""}
             />
@@ -90,11 +90,11 @@ export default function AuthForm() {
 
           {!isLogin && (
             <div className="space-y-2">
-              <Label htmlFor="name">{FORM_LABELS.NAME}</Label>
+              <Label htmlFor={AUTH_FORM.FIELDS.NAME.NAME}>{AUTH_FORM.FIELDS.NAME.LABEL}</Label>
               <Input
-                id="name"
-                type="text"
-                placeholder={FORM_PLACEHOLDERS.NAME}
+                id={AUTH_FORM.FIELDS.NAME.NAME}
+                type={AUTH_FORM.FIELDS.NAME.TYPE}
+                placeholder={AUTH_FORM.FIELDS.NAME.PLACEHOLDER}
                 {...register("name")}
                 className={errors.name ? "border-red-500" : ""}
               />
@@ -103,11 +103,11 @@ export default function AuthForm() {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="password">{FORM_LABELS.PASSWORD}</Label>
+            <Label htmlFor={AUTH_FORM.FIELDS.PASSWORD.NAME}>{AUTH_FORM.FIELDS.PASSWORD.LABEL}</Label>
             <Input
-              id="password"
-              type="password"
-              placeholder={FORM_PLACEHOLDERS.PASSWORD}
+              id={AUTH_FORM.FIELDS.PASSWORD.NAME}
+              type={AUTH_FORM.FIELDS.PASSWORD.TYPE}
+              placeholder={AUTH_FORM.FIELDS.PASSWORD.PLACEHOLDER}
               {...register("password")}
               className={errors.password ? "border-red-500" : ""}
             />
@@ -117,12 +117,12 @@ export default function AuthForm() {
           <input type="hidden" {...register("action")} value={isLogin ? "login" : "register"} />
 
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? BUTTON_LABELS.LOADING : isLogin ? BUTTON_LABELS.LOGIN : BUTTON_LABELS.REGISTER}
+            {isLoading ? AUTH_FORM.BUTTONS.LOADING : isLogin ? AUTH_FORM.BUTTONS.LOGIN : AUTH_FORM.BUTTONS.REGISTER}
           </Button>
 
           <div className="text-center">
             <Button type="button" variant="link" onClick={toggleMode}>
-              {isLogin ? "Don't have an account? Sign up" : "Already have an account? Login"}
+              {isLogin ? AUTH_FORM.BUTTONS.TOGGLE_REGISTER : AUTH_FORM.BUTTONS.TOGGLE_LOGIN}
             </Button>
           </div>
         </form>

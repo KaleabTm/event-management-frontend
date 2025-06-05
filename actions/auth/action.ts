@@ -1,55 +1,51 @@
-"use server"
-
-import { signIn, signOut } from "next-auth/react"
+import axiosInstance from "../axiosInstance"
 import type { AuthFormData } from "@/types/auth"
 
 export async function loginAction(credentials: Omit<AuthFormData, "action">) {
   try {
-    const result = await signIn("credentials", {
+    const response = await axiosInstance.post("/auth/login", {
       email: credentials.email,
       password: credentials.password,
-      action: "login",
-      redirect: false,
     })
 
-    if (result?.error) {
-      throw new Error(result.error)
-    }
-
-    return { success: true, data: result }
-  } catch (error) {
+    return { success: true, data: response.data }
+  } catch (error: any) {
     console.error("Login error:", error)
-    throw new Error(error instanceof Error ? error.message : "Login failed")
+    throw new Error(error.response?.data?.message || "Login failed")
   }
 }
 
 export async function registerAction(credentials: Omit<AuthFormData, "action">) {
   try {
-    const result = await signIn("credentials", {
+    const response = await axiosInstance.post("/auth/register", {
       email: credentials.email,
       password: credentials.password,
       name: credentials.name,
-      action: "register",
-      redirect: false,
     })
 
-    if (result?.error) {
-      throw new Error(result.error)
-    }
-
-    return { success: true, data: result }
-  } catch (error) {
+    return { success: true, data: response.data }
+  } catch (error: any) {
     console.error("Registration error:", error)
-    throw new Error(error instanceof Error ? error.message : "Registration failed")
+    throw new Error(error.response?.data?.message || "Registration failed")
   }
 }
 
 export async function logoutAction() {
   try {
-    await signOut({ callbackUrl: "/" })
+    await axiosInstance.post("/auth/logout")
     return { success: true }
-  } catch (error) {
+  } catch (error: any) {
     console.error("Logout error:", error)
-    throw new Error("Logout failed")
+    throw new Error(error.response?.data?.message || "Logout failed")
+  }
+}
+
+export async function get_session() {
+  try {
+    const response = await axiosInstance.get("/auth/session")
+    return response.data
+  } catch (error: any) {
+    console.error("Get session error:", error)
+    return null
   }
 }

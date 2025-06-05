@@ -1,53 +1,31 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import axiosInstance from "../axiosInstance"
 import type { Event } from "@/types/event"
 
-// Client-side fetch functions
+// Client-side fetch functions using axios
 async function fetchEvents(): Promise<Event[]> {
-  const response = await fetch("/api/events")
-  if (!response.ok) {
-    throw new Error("Failed to fetch events")
-  }
-  return response.json()
+  const response = await axiosInstance.get("/events")
+  return response.data
 }
 
 async function createEvent(eventData: Omit<Event, "id" | "userId" | "createdAt" | "updatedAt">): Promise<Event> {
-  const response = await fetch("/api/events", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(eventData),
-  })
-
-  if (!response.ok) {
-    throw new Error("Failed to create event")
-  }
-
-  return response.json()
+  const response = await axiosInstance.post("/events", eventData)
+  return response.data
 }
 
 async function updateEvent(id: string, eventData: Partial<Event>): Promise<Event> {
-  const response = await fetch(`/api/events/${id}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(eventData),
-  })
-
-  if (!response.ok) {
-    throw new Error("Failed to update event")
-  }
-
-  return response.json()
+  const response = await axiosInstance.put(`/events/${id}`, eventData)
+  return response.data
 }
 
 async function deleteEvent(id: string): Promise<{ id: string }> {
-  const response = await fetch(`/api/events/${id}`, {
-    method: "DELETE",
-  })
-
-  if (!response.ok) {
-    throw new Error("Failed to delete event")
-  }
-
+  await axiosInstance.delete(`/events/${id}`)
   return { id }
+}
+
+async function getEventById(id: string): Promise<Event> {
+  const response = await axiosInstance.get(`/events/${id}`)
+  return response.data
 }
 
 // Query hooks
@@ -55,6 +33,14 @@ export function useEvents() {
   return useQuery({
     queryKey: ["events"],
     queryFn: fetchEvents,
+  })
+}
+
+export function useEvent(id: string) {
+  return useQuery({
+    queryKey: ["events", id],
+    queryFn: () => getEventById(id),
+    enabled: !!id,
   })
 }
 
@@ -74,8 +60,9 @@ export function useUpdateEvent() {
 
   return useMutation({
     mutationFn: ({ id, eventData }: { id: string; eventData: Partial<Event> }) => updateEvent(id, eventData),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["events"] })
+      queryClient.invalidateQueries({ queryKey: ["events", data.id] })
     },
   })
 }
@@ -85,8 +72,9 @@ export function useDeleteEvent() {
 
   return useMutation({
     mutationFn: deleteEvent,
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["events"] })
+      queryClient.removeQueries({ queryKey: ["events", data.id] })
     },
   })
 }
