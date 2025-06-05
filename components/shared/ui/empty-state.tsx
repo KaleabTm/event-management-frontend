@@ -1,5 +1,6 @@
 import type React from "react"
 import type { LucideIcon } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 interface EmptyStateProps {
   icon: LucideIcon
@@ -9,13 +10,15 @@ interface EmptyStateProps {
   className?: string
 }
 
-export default function EmptyState({ icon: Icon, title, description, action, className = "" }: EmptyStateProps) {
+export default function EmptyState({ icon: Icon, title, description, action, className }: EmptyStateProps) {
   return (
-    <div className={`flex flex-col items-center justify-center py-12 ${className}`}>
-      <Icon className="h-12 w-12 text-gray-400 mb-4" />
-      <h3 className="text-lg font-medium text-gray-900 mb-2">{title}</h3>
-      <p className="text-gray-500 text-center mb-4">{description}</p>
-      {action}
+    <div className={cn("flex flex-col items-center justify-center py-12 text-center", className)}>
+      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+        <Icon className="h-6 w-6 text-muted-foreground" />
+      </div>
+      <h3 className="mt-4 text-lg font-semibold text-foreground">{title}</h3>
+      <p className="mt-2 text-sm text-muted-foreground max-w-sm">{description}</p>
+      {action && <div className="mt-6">{action}</div>}
     </div>
   )
 }
