@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { authSchema } from "@/lib/validations/event"
 import { useLogin, useRegister } from "@/actions/query/auth"
+import { useToast } from "@/hooks/use-toast"
 import { PAGES } from "@/constants/pages"
 import { AUTH_FORM } from "@/constants/forms"
 import type { AuthFormData } from "@/types/auth"
@@ -18,6 +19,7 @@ import type { AuthFormData } from "@/types/auth"
 export default function AuthForm() {
   const [isLogin, setIsLogin] = useState(true)
   const router = useRouter()
+  const { toast } = useToast()
 
   const loginMutation = useLogin()
   const registerMutation = useRegister()
@@ -38,12 +40,24 @@ export default function AuthForm() {
     try {
       if (isLogin) {
         await loginMutation.mutateAsync(data)
+        toast({
+          title: "Welcome back!",
+          description: "You have been logged in successfully.",
+        })
       } else {
         await registerMutation.mutateAsync(data)
+        toast({
+          title: "Account created!",
+          description: "Your account has been created successfully.",
+        })
       }
       router.push(PAGES.DASHBOARD)
     } catch (error) {
-      console.error("Auth error:", error)
+      toast({
+        title: isLogin ? "Login failed" : "Registration failed",
+        description: error instanceof Error ? error.message : "An unexpected error occurred.",
+        variant: "destructive",
+      })
     }
   }
 
@@ -61,10 +75,12 @@ export default function AuthForm() {
   const error = loginMutation.error || registerMutation.error
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{isLogin ? AUTH_FORM.BUTTONS.LOGIN : AUTH_FORM.BUTTONS.REGISTER}</CardTitle>
-        <CardDescription>
+    <Card className="w-full max-w-md">
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-2xl text-center">
+          {isLogin ? AUTH_FORM.BUTTONS.LOGIN : AUTH_FORM.BUTTONS.REGISTER}
+        </CardTitle>
+        <CardDescription className="text-center">
           {isLogin ? "Enter your credentials to access your events" : "Create a new account to get started"}
         </CardDescription>
       </CardHeader>
@@ -83,9 +99,9 @@ export default function AuthForm() {
               type={AUTH_FORM.FIELDS.EMAIL.TYPE}
               placeholder={AUTH_FORM.FIELDS.EMAIL.PLACEHOLDER}
               {...register("email")}
-              className={errors.email ? "border-red-500" : ""}
+              className={errors.email ? "border-destructive" : ""}
             />
-            {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
+            {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
           </div>
 
           {!isLogin && (
@@ -96,9 +112,9 @@ export default function AuthForm() {
                 type={AUTH_FORM.FIELDS.NAME.TYPE}
                 placeholder={AUTH_FORM.FIELDS.NAME.PLACEHOLDER}
                 {...register("name")}
-                className={errors.name ? "border-red-500" : ""}
+                className={errors.name ? "border-destructive" : ""}
               />
-              {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
+              {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
             </div>
           )}
 
@@ -109,9 +125,9 @@ export default function AuthForm() {
               type={AUTH_FORM.FIELDS.PASSWORD.TYPE}
               placeholder={AUTH_FORM.FIELDS.PASSWORD.PLACEHOLDER}
               {...register("password")}
-              className={errors.password ? "border-red-500" : ""}
+              className={errors.password ? "border-destructive" : ""}
             />
-            {errors.password && <p className="text-sm text-red-500">{errors.password.message}</p>}
+            {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
           </div>
 
           <input type="hidden" {...register("action")} value={isLogin ? "login" : "register"} />
@@ -121,7 +137,7 @@ export default function AuthForm() {
           </Button>
 
           <div className="text-center">
-            <Button type="button" variant="link" onClick={toggleMode}>
+            <Button type="button" variant="link" onClick={toggleMode} className="text-sm">
               {isLogin ? AUTH_FORM.BUTTONS.TOGGLE_REGISTER : AUTH_FORM.BUTTONS.TOGGLE_LOGIN}
             </Button>
           </div>

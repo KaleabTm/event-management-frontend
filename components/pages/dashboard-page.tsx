@@ -3,9 +3,10 @@
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
-import DashboardPage from "@/components/pages/dashboard-page"
+import Dashboard from "@/components/dashboard"
+import LoadingSpinner from "@/components/shared/ui/loading-spinner"
 
-export default function Page() {
+export default function DashboardPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
 
@@ -17,10 +18,10 @@ export default function Page() {
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-500">Loading...</p>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <LoadingSpinner size="lg" />
+          <p className="text-muted-foreground">Loading your dashboard...</p>
         </div>
       </div>
     )
@@ -30,5 +31,5 @@ export default function Page() {
     return null // Will redirect
   }
 
-  return <DashboardPage />
+  return <Dashboard />
 }

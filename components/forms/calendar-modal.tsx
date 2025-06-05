@@ -11,7 +11,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { calendarSchema, type CalendarFormData } from "@/lib/validations/event"
 import { useCreateCalendar, useUpdateCalendar } from "@/actions/query/calendars"
 import { useCalendarVisibility } from "@/hooks/use-calendar-visibility"
-import { FORM_LABELS, FORM_PLACEHOLDERS, BUTTON_LABELS } from "@/constants/forms"
+import { useToast } from "@/hooks/use-toast"
+import { CALENDAR_FORM } from "@/constants/forms"
 
 interface CalendarModalProps {
   isOpen: boolean
@@ -19,9 +20,10 @@ interface CalendarModalProps {
   calendar?: any
 }
 
-const colors = ["#3B82F6", "#EF4444", "#10B981", "#F59E0B", "#8B5CF6", "#EC4899", "#06B6D4", "#84CC16"]
+const colors = CALENDAR_FORM.COLORS
 
 export default function CalendarModal({ isOpen, onClose, calendar }: CalendarModalProps) {
+  const { toast } = useToast()
   const createCalendarMutation = useCreateCalendar()
   const updateCalendarMutation = useUpdateCalendar()
   const { setCalendarVisibility } = useCalendarVisibility()
@@ -65,15 +67,27 @@ export default function CalendarModal({ isOpen, onClose, calendar }: CalendarMod
       if (calendar?.id) {
         await updateCalendarMutation.mutateAsync({ id: calendar.id, calendarData: data })
         setCalendarVisibility(calendar.id, data.isVisible)
+        toast({
+          title: "Calendar updated",
+          description: "Your calendar has been updated successfully.",
+        })
       } else {
         const newCalendar = await createCalendarMutation.mutateAsync(data)
         if (data.isVisible && newCalendar.id) {
           setCalendarVisibility(newCalendar.id, true)
         }
+        toast({
+          title: "Calendar created",
+          description: "Your calendar has been created successfully.",
+        })
       }
       onClose()
     } catch (error) {
-      console.error("Failed to save calendar:", error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to save calendar",
+        variant: "destructive",
+      })
     }
   }
 
@@ -87,30 +101,30 @@ export default function CalendarModal({ isOpen, onClose, calendar }: CalendarMod
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div>
-            <Label htmlFor="name">{FORM_LABELS.CALENDAR_NAME} *</Label>
+          <div className="space-y-2">
+            <Label htmlFor="name">{CALENDAR_FORM.FIELDS.NAME.LABEL} *</Label>
             <Input
               id="name"
               {...register("name")}
-              className={errors.name ? "border-red-500" : ""}
-              placeholder={FORM_PLACEHOLDERS.CALENDAR_NAME}
+              className={errors.name ? "border-destructive" : ""}
+              placeholder={CALENDAR_FORM.FIELDS.NAME.PLACEHOLDER}
             />
-            {errors.name && <p className="text-sm text-red-500 mt-1">{errors.name.message}</p>}
+            {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
           </div>
 
-          <div>
-            <Label htmlFor="description">{FORM_LABELS.CALENDAR_DESCRIPTION}</Label>
+          <div className="space-y-2">
+            <Label htmlFor="description">{CALENDAR_FORM.FIELDS.DESCRIPTION.LABEL}</Label>
             <Textarea
               id="description"
               {...register("description")}
               rows={2}
-              placeholder={FORM_PLACEHOLDERS.CALENDAR_DESCRIPTION}
+              placeholder={CALENDAR_FORM.FIELDS.DESCRIPTION.PLACEHOLDER}
             />
           </div>
 
-          <div>
+          <div className="space-y-2">
             <Label>Calendar Color</Label>
-            <div className="flex space-x-2 mt-2">
+            <div className="flex space-x-2">
               {colors.map((color) => (
                 <Controller
                   key={color}
@@ -119,8 +133,8 @@ export default function CalendarModal({ isOpen, onClose, calendar }: CalendarMod
                   render={({ field }) => (
                     <button
                       type="button"
-                      className={`w-8 h-8 rounded-full border-2 ${
-                        field.value === color ? "border-gray-800" : "border-gray-300"
+                      className={`w-8 h-8 rounded-full border-2 transition-all ${
+                        field.value === color ? "border-foreground scale-110" : "border-border hover:scale-105"
                       }`}
                       style={{ backgroundColor: color }}
                       onClick={() => field.onChange(color)}
@@ -131,12 +145,16 @@ export default function CalendarModal({ isOpen, onClose, calendar }: CalendarMod
             </div>
           </div>
 
-          <div className="flex justify-end space-x-2 pt-4">
+          <div className="flex justify-end space-x-2 pt-4 border-t">
             <Button type="button" variant="outline" onClick={onClose}>
-              {BUTTON_LABELS.CANCEL}
+              {CALENDAR_FORM.BUTTONS.CANCEL}
             </Button>
             <Button type="submit" disabled={isSubmitting || isPending}>
-              {isSubmitting || isPending ? BUTTON_LABELS.SAVING : calendar?.id ? "Update Calendar" : "Create Calendar"}
+              {isSubmitting || isPending
+                ? CALENDAR_FORM.BUTTONS.SAVING
+                : calendar?.id
+                  ? CALENDAR_FORM.BUTTONS.UPDATE
+                  : CALENDAR_FORM.BUTTONS.CREATE}
             </Button>
           </div>
         </form>

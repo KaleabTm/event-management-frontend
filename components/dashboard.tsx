@@ -7,7 +7,7 @@ import DashboardLayout from "./shared/layout/dashboard-layout"
 import CalendarSidebar from "./shared/navigations/calendar-sidebar"
 import CalendarView from "./calendar-view"
 import ListView from "./list-view"
-import EventModal from "./event-modal"
+import EventModal from "./forms/event-modal"
 import { Plus } from "lucide-react"
 import { DASHBOARD_PAGE } from "@/constants/pages/dashboard-page"
 

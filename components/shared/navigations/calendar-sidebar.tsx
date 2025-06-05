@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast"
 import { useCalendars, useDeleteCalendar } from "@/actions/query/calendars"
 import { useCalendarVisibility } from "@/hooks/use-calendar-visibility"
 import { exportCalendar } from "@/lib/ics-export"
-import CalendarModal from "../../calendar-modal"
+import CalendarModal from "../../forms/calendar-modal"
 import LoadingSpinner from "../ui/loading-spinner"
 import { Plus, MoreHorizontal, Download, Edit, Trash2, Eye, EyeOff } from "lucide-react"
 
