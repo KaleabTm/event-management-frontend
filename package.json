@@ -10,7 +10,6 @@
   },
   "dependencies": {
     "@auth/core": "latest",
-    "@fullcalendar/common": "latest",
     "@fullcalendar/core": "latest",
     "@fullcalendar/daygrid": "latest",
     "@fullcalendar/interaction": "latest",

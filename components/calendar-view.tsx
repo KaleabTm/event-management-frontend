@@ -11,10 +11,10 @@ import { useCalendars } from "@/actions/query/calendars"
 import { useCalendarVisibility } from "@/hooks/use-calendar-visibility"
 import LoadingSpinner from "./shared/ui/loading-spinner"
 
-// Import FullCalendar CSS
-import "@fullcalendar/common/main.css"
-import "@fullcalendar/daygrid/main.css"
-import "@fullcalendar/timegrid/main.css"
+// Remove all these CSS import lines:
+// import "@fullcalendar/common/main.css"
+// import "@fullcalendar/daygrid/main.css"
+// import "@fullcalendar/timegrid/main.css"
 
 interface CalendarViewProps {
   onEditEvent: (event: any) => void
