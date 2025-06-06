@@ -3,7 +3,7 @@
 import type React from "react"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Calendar, List } from "lucide-react"
-import { DASHBOARD_PAGE } from "@/constants/pages/dashboard-page"
+import { DASHBOARD_PAGE } from "@/constants/colors"
 
 interface DashboardTabsProps {
   children: React.ReactNode
