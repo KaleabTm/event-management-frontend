@@ -1,30 +1,65 @@
-# Event management system
+# 📅 Event Management System
 
-_Automatically synced with your [v0.dev](https://v0.dev) deployments_
+A modern and modular event management platform that allows users to organize, manage, and track events within multiple calendars. Built with a React frontend, Zustand for state management, and a REST API backend (e.g. Django).
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/kaleab-tamirus-projects/v0-event-management-system)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.dev-black?style=for-the-badge)](https://v0.dev/chat/projects/9QRcNCmIerA)
+---
 
-## Overview
+## ✨ Features
 
-This repository will stay in sync with your deployed chats on [v0.dev](https://v0.dev).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.dev](https://v0.dev).
+### 🔐 Authentication
+- Secure login and user-specific data access
+- Token-based API communication
 
-## Deployment
+### 🗓️ Calendar Management
+- Create, update, delete calendars
+- Link events to specific calendars
 
-Your project is live at:
+### 📌 Event Management
+- Create, edit, delete, and view events
+- Filter events by calendar
+- Retrieve individual event details
+- Support for recurrence, time range, color tagging, and more
 
-**[https://vercel.com/kaleab-tamirus-projects/v0-event-management-system](https://vercel.com/kaleab-tamirus-projects/v0-event-management-system)**
+### ⚙️ State Management
+- Fast and predictable state using Zustand
+- Local state caching for performance
 
-## Build your app
+### 🌐 API Integration
+- Clean async actions for CRUD operations
+- Axios-based HTTP client
 
-Continue building your app on:
+### 🧪 Error Handling
+- Graceful error display and logging
+- Centralized error state per feature
 
-**[https://v0.dev/chat/projects/9QRcNCmIerA](https://v0.dev/chat/projects/9QRcNCmIerA)**
+---
 
-## How It Works
+## 🚀 Getting Started
 
-1. Create and modify your project using [v0.dev](https://v0.dev)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+### 📦 Prerequisites
+
+- Node.js (v18+)
+- pnpm (or npm/yarn)
+- Backend API running (e.g. Django with REST endpoints for `/events`, `/calendars`)
+
+---
+
+### 🔧 Installation
+
+```bash
+pnpm install
+```
+
+###  ▶️ Running the App
+
+```bash
+pnpm dev
+```
+
+### 🏗️ Build for Production
+```bash
+pnpm build
+```
+
+
+
