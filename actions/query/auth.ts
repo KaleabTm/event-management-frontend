@@ -1,58 +1,77 @@
-import { useMutation } from "@tanstack/react-query"
-import { signIn, signOut } from "next-auth/react"
-import type { AuthFormData } from "@/types/auth"
+import { useRouter } from "next/navigation";
 
-// Auth mutation functions
-async function login(credentials: Omit<AuthFormData, "action">) {
-  const result = await signIn("credentials", {
-    email: credentials.email,
-    password: credentials.password,
-    action: "login",
-    redirect: false,
-  })
+import { useMutation } from "@tanstack/react-query";
+import { login, register, logout } from "@/actions/auth/action";
 
-  if (result?.error) {
-    throw new Error(result.error)
-  }
+import { PAGES, AUTH_FORM } from "@/constants/colors";
+import { toast } from "sonner"; // or wherever your toast comes from
 
-  return result
-}
-
-async function register(credentials: Omit<AuthFormData, "action">) {
-  const result = await signIn("credentials", {
-    email: credentials.email,
-    password: credentials.password,
-    name: credentials.name,
-    action: "register",
-    redirect: false,
-  })
-
-  if (result?.error) {
-    throw new Error(result.error)
-  }
-
-  return result
-}
-
-async function logout() {
-  await signOut({ callbackUrl: "/" })
-}
-
-// Auth hooks
 export function useLogin() {
-  return useMutation({
-    mutationFn: login,
-  })
+	const router = useRouter();
+
+	return useMutation({
+		mutationFn: login,
+		onMutate: () => {
+			toast.dismiss();
+			toast.loading("Logging in...");
+		},
+		onSuccess: () => {
+			toast.dismiss();
+			toast.success("Welcome back!");
+			router.push("/dashboard");
+		},
+		onError: (error: unknown) => {
+			toast.dismiss();
+			toast.error(
+				error instanceof Error ? error.message : "Login failed. Please try again."
+			);
+		},
+	});
 }
 
 export function useRegister() {
-  return useMutation({
-    mutationFn: register,
-  })
+	const router = useRouter();
+
+	return useMutation({
+		mutationKey: ["register"],
+		mutationFn: register,
+		onMutate: () => {
+			toast.dismiss();
+			toast.loading("Creating account...");
+		},
+		onSuccess: () => {
+			toast.dismiss();
+			toast.success("Account created successfully!");
+			router.push("/dashboard");
+		},
+		onError: (error: unknown) => {
+			toast.dismiss();
+			toast.error(
+				error instanceof Error
+					? error.message
+					: "Registration failed. Please try again."
+			);
+		},
+	});
 }
 
-export function useLogout() {
-  return useMutation({
-    mutationFn: logout,
-  })
-}
+export const useLogout = () => {
+	const router = useRouter(); // Initialize the router
+	return useMutation({
+		mutationKey: ["logout"],
+		mutationFn: logout,
+		onMutate: () => {
+			toast.dismiss();
+			toast.loading("በመውጣት ላይ፣ እባክዎን ትንሽ ይጠብቁ...");
+		},
+		onSuccess: () => {
+			toast.dismiss();
+			toast.success("Logout... 👋🏾BYE!");
+			router.push("/"); // Redirect to login page after logout
+		},
+		onError: (errorMessage: string) => {
+			toast.dismiss();
+			toast.error(errorMessage);
+		},
+	});
+};

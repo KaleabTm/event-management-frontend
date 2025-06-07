@@ -1,63 +1,46 @@
-import type { AxiosInstance } from "axios"
-import axios from "axios"
-import { getSession } from "next-auth/react"
+import type { AxiosInstance } from "axios";
+import axios from "axios";
 
-axios.defaults.withCredentials = true
+import { get_session } from "./auth/action";
+
+axios.defaults.withCredentials = true;
 
 const axiosInstance: AxiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || "/api", // Default baseURL for API requests
-  timeout: 20000,
-  headers: {
-    "Content-Type": "application/json",
-  },
-})
+	baseURL: process.env.DJANGO_API_BASE_URL, // Default baseURL for non-tenant requests
+	timeout: 20000,
+	headers: {
+		"Content-Type": "application/json",
+	},
+});
 
-// Add a request interceptor to handle session-based authorization
+// Add a request interceptor to handle session-based subdomains
 axiosInstance.interceptors.request.use(
-  async (config) => {
-    // Handle session authorization
-    if (config.data instanceof FormData) {
-      // Let Axios handle Content-Type for FormData
-      delete config.headers["Content-Type"]
-    }
+	async (config) => {
+		// Handle session authorization
+		if (config.data instanceof FormData) {
+			// Let Axios handle Content-Type for FormData
+			delete config.headers["Content-Type"];
+		}
+		if (
+			!config.url?.includes("auth/login/") &&
+			!config.url?.includes("auth/signup/") &&
+			!config.url?.includes("auth/forgot-password/") &&
+			!config.url?.includes("auth/verify-otp/") &&
+			!config.url?.includes("auth/reset-password/")
+		) {
+			const session = await get_session();
+			const sessionId = session?.sessionId;
 
-    // Skip auth for login/register endpoints
-    if (
-      !config.url?.includes("auth/login") &&
-      !config.url?.includes("auth/register") &&
-      !config.url?.includes("auth/forgot-password") &&
-      !config.url?.includes("auth/verify-otp") &&
-      !config.url?.includes("auth/reset-password")
-    ) {
-      try {
-        const session = await getSession()
-        if (session?.user?.email) {
-          config.headers.Authorization = `Bearer ${session.user.email}`
-        }
-      } catch (error) {
-        console.error("Error getting session:", error)
-      }
-    }
+			if (sessionId) {
+				config.headers.Authorization = `Session ${sessionId}`;
+			}
+		}
 
-    return config
-  },
-  (error) => {
-    return Promise.reject(error)
-  },
-)
+		return config;
+	},
+	(error) => {
+		return Promise.reject(error);
+	}
+);
 
-// Add a response interceptor to handle errors
-axiosInstance.interceptors.response.use(
-  (response) => {
-    return response
-  },
-  (error) => {
-    if (error.response?.status === 401) {
-      // Handle unauthorized access
-      console.error("Unauthorized access - redirecting to login")
-    }
-    return Promise.reject(error)
-  },
-)
-
-export default axiosInstance
+export default axiosInstance;
