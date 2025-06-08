@@ -1,3 +1,5 @@
+"use client";
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Calendar } from "@/types/calendar";
 import {
@@ -12,7 +14,15 @@ import {
 export function useCalendars() {
 	return useQuery({
 		queryKey: ["calendars"],
-		queryFn: fetchCalendars,
+		queryFn: async () => {
+			try {
+				const response = await fetchCalendars();
+				console.log(response);
+				return response;
+			} catch (error) {
+				console.log(error);
+			}
+		},
 	});
 }
 

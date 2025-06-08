@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -12,7 +12,6 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
-import { useCalendarStore } from "@/lib/store";
 import { useCalendarVisibility } from "@/hooks/use-calendar-visibility";
 import { exportCalendar } from "@/lib/ics-export";
 import CalendarModal from "../../modals/calendar-modal";
@@ -27,26 +26,19 @@ import {
 	EyeOff,
 } from "lucide-react";
 
-export default function CalendarSidebar() {
-	const {
-		calendars,
-		loading,
-		fetchCalendars,
-		deleteCalendar,
-		isModalOpen,
-		openModal,
-		closeModal,
-		editingCalendar,
-		setEditingCalendar,
-	} = useCalendarStore();
+import { useCalendars, useDeleteCalendar } from "@/actions/query/calendars";
+import type { Calendar } from "@/types/calendar";
 
+export default function CalendarSidebar() {
+	const { data: calendars = [], isLoading } = useCalendars();
+	const deleteMutation = useDeleteCalendar();
 	const { toast } = useToast();
+
 	const { visibleCalendarIds, toggleCalendarVisibility, setInitialCalendars } =
 		useCalendarVisibility();
 
-	useEffect(() => {
-		fetchCalendars();
-	}, [fetchCalendars]);
+	const [isModalOpen, setIsModalOpen] = useState(false);
+	const [editingCalendar, setEditingCalendar] = useState<Calendar | null>(null);
 
 	useEffect(() => {
 		if (calendars.length > 0 && visibleCalendarIds.length === 0) {
@@ -56,12 +48,12 @@ export default function CalendarSidebar() {
 
 	const handleCreateCalendar = () => {
 		setEditingCalendar(null);
-		openModal();
+		setIsModalOpen(true);
 	};
 
-	const handleEditCalendar = (calendar: any) => {
+	const handleEditCalendar = (calendar: Calendar) => {
 		setEditingCalendar(calendar);
-		openModal();
+		setIsModalOpen(true);
 	};
 
 	const handleDeleteCalendar = async (
@@ -69,7 +61,7 @@ export default function CalendarSidebar() {
 		calendarName: string
 	) => {
 		try {
-			await deleteCalendar(calendarId);
+			await deleteMutation.mutateAsync(calendarId);
 			toast({
 				title: "Calendar deleted",
 				description: `${calendarName} has been deleted successfully.`,
@@ -83,7 +75,7 @@ export default function CalendarSidebar() {
 		}
 	};
 
-	const handleExportCalendar = (calendar: any) => {
+	const handleExportCalendar = (calendar: Calendar) => {
 		const events = calendar.events || [];
 		if (events.length === 0) {
 			toast({
@@ -100,7 +92,7 @@ export default function CalendarSidebar() {
 		});
 	};
 
-	if (loading) {
+	if (isLoading) {
 		return (
 			<Card className="w-80">
 				<CardHeader>
@@ -208,7 +200,7 @@ export default function CalendarSidebar() {
 
 			<CalendarModal
 				isOpen={isModalOpen}
-				onClose={closeModal}
+				onClose={() => setIsModalOpen(false)}
 				calendar={editingCalendar}
 			/>
 		</Card>

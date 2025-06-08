@@ -1,9 +1,13 @@
-import type { Event } from "@/types/event";
-import axiosInstance from "../axiosInstance";
+"use server";
+
+import type { CreateEventInput, Event } from "@/types/event";
+import axiosInstance from "@/actions/axiosInstance";
 
 export async function fetchEventsAction(): Promise<Event[]> {
+	console.log("ddddd");
 	try {
-		const response = await axiosInstance.get("/events");
+		const response = await axiosInstance.get("events/");
+		// const response = await axios.get("http://127.0.0.1:8000/api/events/");
 		return response.data;
 	} catch (error: any) {
 		console.error("Fetch events error:", error);
@@ -12,10 +16,10 @@ export async function fetchEventsAction(): Promise<Event[]> {
 }
 
 export async function createEventAction(
-	eventData: Omit<Event, "id" | "userId" | "created_at" | "updated_at">
+	eventData: CreateEventInput
 ): Promise<Event> {
 	try {
-		const response = await axiosInstance.post("events/create", eventData);
+		const response = await axiosInstance.post("events/create/", eventData);
 		return response.data;
 	} catch (error: any) {
 		console.error("Create event error:", error);
@@ -23,10 +27,13 @@ export async function createEventAction(
 	}
 }
 
-export async function updateEventAction(
-	id: string,
-	eventData: Partial<Event>
-): Promise<Event> {
+export async function updateEventAction({
+	id,
+	eventData,
+}: {
+	id: string;
+	eventData: Partial<CreateEventInput>;
+}): Promise<Event> {
 	try {
 		const response = await axiosInstance.put(`events/${id}/update/`, eventData);
 		return response.data;
@@ -48,7 +55,7 @@ export async function deleteEventAction(id: string): Promise<{ id: string }> {
 
 export async function getEventByIdAction(id: string): Promise<Event> {
 	try {
-		const response = await axiosInstance.get(`/events/${id}`);
+		const response = await axiosInstance.get(`events/${id}/`);
 		return response.data;
 	} catch (error: any) {
 		console.error("Get event error:", error);

@@ -1,3 +1,5 @@
+"use server";
+
 import axiosInstance from "@/actions/axiosInstance";
 import type { Calendar } from "@/types/calendar";
 
@@ -11,8 +13,11 @@ type CalendarInput = {
 
 // Fetch all calendars
 export async function fetchCalendarsAction(): Promise<Calendar[]> {
+	console.log("kkkkkk");
 	try {
 		const response = await axiosInstance.get("calendars/");
+		console.log(response.data);
+
 		return response.data;
 	} catch (error: any) {
 		console.error("Fetch calendars error:", error);
@@ -24,6 +29,7 @@ export async function fetchCalendarsAction(): Promise<Calendar[]> {
 export async function createCalendarAction(
 	calendarData: CalendarInput
 ): Promise<Calendar> {
+	console.log("has reached");
 	try {
 		const response = await axiosInstance.post("calendars/create/", calendarData);
 		return response.data;

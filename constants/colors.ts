@@ -110,12 +110,12 @@ export const EVENT_FORM = {
 			TYPE: "datetime-local",
 		},
 		END_DATE: {
-			NAME: "end",
+			NAME: "end_time",
 			LABEL: "End Date & Time",
 			TYPE: "datetime-local",
 		},
 		ALL_DAY: {
-			NAME: "allDay",
+			NAME: "is_all_day",
 			LABEL: "All Day Event",
 			TYPE: "checkbox",
 		},

@@ -25,7 +25,8 @@ import {
 	ChevronDown,
 	Settings,
 } from "lucide-react";
-import { useCalendarStore } from "@/lib/store";
+
+import { useCalendars } from "@/actions/query/calendars";
 
 interface MainNavbarProps {
 	onError?: (error: string) => void;
@@ -34,12 +35,9 @@ interface MainNavbarProps {
 export default function MainNavbar({ onError }: MainNavbarProps) {
 	const { toast } = useToast();
 	const { data: events = [] } = useEvents();
-	const { calendars = [] } = useCalendarStore();
+	const { data: calendars = [] } = useCalendars();
 	const { visibleCalendarIds } = useCalendarVisibility();
 	const logoutMutation = useLogout();
-	console.log("🧪 calendars =", calendars);
-	console.log("🧪 typeof calendars =", typeof calendars);
-	console.log("🧪 Array.isArray(calendars) =", Array.isArray(calendars));
 
 	const handleLogout = () => {
 		logoutMutation.mutate(undefined, {
@@ -61,7 +59,7 @@ export default function MainNavbar({ onError }: MainNavbarProps) {
 
 	const handleExportAll = () => {
 		const visibleEvents = events.filter((event) =>
-			visibleCalendarIds.includes(event.calendarId)
+			visibleCalendarIds.includes(event.calendar.id)
 		);
 
 		if (visibleEvents.length === 0) {
@@ -87,7 +85,7 @@ export default function MainNavbar({ onError }: MainNavbarProps) {
 		name: string;
 		color?: string;
 	}) => {
-		const calendarEvents = events.filter((e) => e.calendarId === calendar.id);
+		const calendarEvents = events.filter((e) => e.calendar.id === calendar.id);
 
 		if (calendarEvents.length === 0) {
 			toast({
@@ -135,7 +133,7 @@ export default function MainNavbar({ onError }: MainNavbarProps) {
 									Export All Events
 								</DropdownMenuItem>
 								{calendars?.length > 0 && <DropdownMenuSeparator />}
-								{calendars?.map((calendar) => (
+								{calendars.map((calendar) => (
 									<DropdownMenuItem
 										key={calendar.id}
 										onClick={() => handleExportByCalendar(calendar)}

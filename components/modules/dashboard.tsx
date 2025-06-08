@@ -1,15 +1,15 @@
 "use client";
 
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-import DashboardLayout from "./shared/layout/dashboard-layout";
-import CalendarSidebar from "./shared/navigations/calendar-sidebar";
+import { DASHBOARD_PAGE } from "@/constants/colors";
+import { Plus } from "lucide-react";
+import { useState } from "react";
+import EventModal from "../modals/event-modal";
+import DashboardLayout from "../shared/layout/dashboard-layout";
+import CalendarSidebar from "../shared/navigations/calendar-sidebar";
 import CalendarView from "./calendar-view";
 import ListView from "./list-view";
-import EventModal from "./modals/event-modal";
-import { Plus } from "lucide-react";
-import { DASHBOARD_PAGE } from "@/constants/colors";
 
 export default function Dashboard() {
 	const [isEventModalOpen, setIsEventModalOpen] = useState(false);

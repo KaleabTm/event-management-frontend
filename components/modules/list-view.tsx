@@ -1,15 +1,15 @@
 "use client";
 
+import { useCalendars } from "@/actions/query/calendars";
+import { useDeleteEvent, useEvents } from "@/actions/query/events";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { useEvents, useDeleteEvent } from "@/actions/query/events";
-import { useCalendars } from "@/actions/query/calendars";
 import { useCalendarVisibility } from "@/hooks/use-calendar-visibility";
-import LoadingSpinner from "./shared/ui/loading-spinner";
-import EmptyState from "./shared/ui/empty-state";
-import { Calendar, Clock, Edit, Trash2, Repeat, Download } from "lucide-react";
 import { exportSingleEvent } from "@/lib/ics-export";
+import { Calendar, Clock, Download, Edit, Repeat, Trash2 } from "lucide-react";
+import EmptyState from "../shared/ui/empty-state";
+import LoadingSpinner from "../shared/ui/loading-spinner";
 
 interface ListViewProps {
 	onEditEvent: (event: any) => void;
@@ -26,17 +26,17 @@ export default function ListView({ onEditEvent }: ListViewProps) {
 
 	// Filter visible events
 	const visibleEvents = events.filter((event) =>
-		visibleCalendarIds.includes(event.calendarId)
+		visibleCalendarIds.includes(event.calendar.id)
 	);
 
-	// Sort events by start date
+	// Sort events by start_time date
 	const sortedEvents = [...visibleEvents].sort(
-		(a, b) => new Date(a.start).getTime() - new Date(b.start).getTime()
+		(a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
 	);
 
 	// Filter upcoming events
 	const upcomingEvents = sortedEvents
-		.filter((event) => new Date(event.start) >= new Date())
+		.filter((event) => new Date(event.start_time) >= new Date())
 		.slice(0, 20);
 
 	const formatDate = (dateString: string) => {
@@ -59,7 +59,7 @@ export default function ListView({ onEditEvent }: ListViewProps) {
 	};
 
 	const getRecurrenceText = (recurrence: any) => {
-		switch (recurrence.type) {
+		switch (recurrence.frequency) {
 			case "daily":
 				return recurrence.interval === 1
 					? "Daily"
@@ -131,7 +131,7 @@ export default function ListView({ onEditEvent }: ListViewProps) {
 									<div className="flex items-center space-x-2">
 										<h3 className="font-medium text-gray-900">{event.title}</h3>
 										{(() => {
-											const calendar = calendars.find((c) => c.id === event.calendarId);
+											const calendar = calendars.find((c) => c.id === event.calendar.id);
 											return calendar ? (
 												<Badge
 													variant="outline"
@@ -148,7 +148,7 @@ export default function ListView({ onEditEvent }: ListViewProps) {
 									</div>
 									<div
 										className="w-3 h-3 rounded-full ml-2 mt-1"
-										style={{ backgroundColor: event.color }}
+										style={{ backgroundColor: event.color ?? undefined }}
 									/>
 								</div>
 
@@ -159,15 +159,15 @@ export default function ListView({ onEditEvent }: ListViewProps) {
 								<div className="flex items-center space-x-4 text-sm text-gray-500">
 									<div className="flex items-center">
 										<Calendar className="h-4 w-4 mr-1" />
-										{formatDate(event.start)}
+										{formatDate(event.start_time)}
 									</div>
-									{!event.allDay && (
+									{!event.is_all_day && (
 										<div className="flex items-center">
 											<Clock className="h-4 w-4 mr-1" />
-											{formatTime(event.start)} - {formatTime(event.end)}
+											{formatTime(event.start_time)} - {formatTime(event.end_time)}
 										</div>
 									)}
-									{event.recurrence.type !== "none" && (
+									{event.recurrence.frequency !== "none" && (
 										<div className="flex items-center">
 											<Repeat className="h-4 w-4 mr-1" />
 											<Badge variant="secondary" className="text-xs">

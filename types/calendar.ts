@@ -1,3 +1,5 @@
+import type { Event } from "@/types/event";
+
 export interface Calendar {
 	id: string;
 	name: string;
@@ -7,6 +9,7 @@ export interface Calendar {
 	userId: string;
 	created_at: string;
 	updated_at: string;
+	events: Event[];
 }
 
 export interface CalendarFormData {

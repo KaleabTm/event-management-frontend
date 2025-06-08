@@ -7,24 +7,31 @@ export const eventSchema = z
 			.min(1, "Event title is required")
 			.max(100, "Title too long"),
 		description: z.string().optional(),
-		start: z.string().datetime("Invalid start date"),
-		end: z.string().datetime("Invalid end date"),
-		allDay: z.boolean(),
+		start_time: z.string().datetime("Invalid start_time date"),
+		end_time: z.string().datetime("Invalid end_time date"),
+		is_all_day: z.boolean(),
 		color: z.string().regex(/^#[0-9A-F]{6}$/i, "Invalid color format"),
 		calendarId: z.string().min(1, "Calendar is required"),
 		recurrence: z.object({
-			type: z.enum(["none", "daily", "weekly", "monthly", "yearly", "custom"]),
+			frequency: z.enum([
+				"none",
+				"daily",
+				"weekly",
+				"monthly",
+				"yearly",
+				"custom",
+			]),
 			interval: z.number().min(1).max(365),
 			weekdays: z.array(z.number().min(0).max(6)),
-			monthlyType: z.enum(["date", "weekday"]),
-			weekdayOrdinal: z.number().min(1).max(5),
-			endDate: z.string().optional(),
-			endAfter: z.number().min(1).max(999),
+			monthly_type: z.enum(["date", "weekday"]),
+			weekday_ordinal: z.number().min(1).max(5),
+			end_date: z.string().optional(),
+			repeat_count: z.number().min(1).max(999),
 		}),
 	})
-	.refine((data) => new Date(data.end) >= new Date(data.start), {
-		message: "End date must be after start date",
-		path: ["end"],
+	.refine((data) => new Date(data.end_time) >= new Date(data.start_time), {
+		message: "End date must be after start_time date",
+		path: ["end_time"],
 	});
 
 export const calendarSchema = z.object({

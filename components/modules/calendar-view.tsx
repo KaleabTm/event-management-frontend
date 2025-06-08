@@ -1,15 +1,15 @@
 "use client";
 
-import { useRef } from "react";
-import FullCalendar from "@fullcalendar/react";
-import dayGridPlugin from "@fullcalendar/daygrid";
-import timeGridPlugin from "@fullcalendar/timegrid";
-import interactionPlugin from "@fullcalendar/interaction";
-import { Card, CardContent } from "@/components/ui/card";
-import { useEvents } from "@/actions/query/events";
 import { useCalendars } from "@/actions/query/calendars";
+import { useEvents } from "@/actions/query/events";
+import { Card, CardContent } from "@/components/ui/card";
 import { useCalendarVisibility } from "@/hooks/use-calendar-visibility";
-import LoadingSpinner from "./shared/ui/loading-spinner";
+import dayGridPlugin from "@fullcalendar/daygrid";
+import interactionPlugin from "@fullcalendar/interaction";
+import FullCalendar from "@fullcalendar/react";
+import timeGridPlugin from "@fullcalendar/timegrid";
+import { useRef } from "react";
+import LoadingSpinner from "../shared/ui/loading-spinner";
 
 interface CalendarViewProps {
 	onEditEvent: (event: any) => void;
@@ -25,24 +25,24 @@ export default function CalendarView({ onEditEvent }: CalendarViewProps) {
 
 	// Filter visible events
 	const visibleEvents = events.filter((event) =>
-		visibleCalendarIds.includes(event.calendarId)
+		visibleCalendarIds.includes(event.calendar.id)
 	);
 
 	// Convert events to FullCalendar format
 	const calendarEvents = visibleEvents.map((event) => {
-		const calendar = calendars.find((c) => c.id === event.calendarId);
+		const calendar = calendars.find((c) => c.id === event.calendar.id);
 		return {
 			id: event.id,
 			title: event.title,
-			start: event.start,
-			end: event.end,
-			allDay: event.allDay,
-			backgroundColor: calendar?.color || event.color,
-			borderColor: calendar?.color || event.color,
+			start: event.start_time,
+			end: event.end_time,
+			allDay: event.is_all_day,
+			backgroundColor: calendar?.color ?? event.color ?? undefined,
+			borderColor: calendar?.color ?? event.color ?? undefined,
 			extendedProps: {
 				description: event.description,
 				recurrence: event.recurrence,
-				calendarId: event.calendarId,
+				calendarId: event.calendar.id,
 			},
 		};
 	});
@@ -62,9 +62,9 @@ export default function CalendarView({ onEditEvent }: CalendarViewProps) {
 
 		// Create new event with selected date/time
 		const newEvent = {
-			start: selectInfo.start.toISOString(),
-			end: selectInfo.end.toISOString(),
-			allDay: selectInfo.allDay,
+			start_time: selectInfo.start_time.toISOString(),
+			end_time: selectInfo.end_time.toISOString(),
+			is_all_day: selectInfo.is_all_day,
 			calendarId: defaultCalendar?.id || calendars[0]?.id || "",
 		};
 		onEditEvent(newEvent);

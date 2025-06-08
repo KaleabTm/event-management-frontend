@@ -21,13 +21,7 @@ axiosInstance.interceptors.request.use(
 			// Let Axios handle Content-Type for FormData
 			delete config.headers["Content-Type"];
 		}
-		if (
-			!config.url?.includes("auth/login/") &&
-			!config.url?.includes("auth/signup/") &&
-			!config.url?.includes("auth/forgot-password/") &&
-			!config.url?.includes("auth/verify-otp/") &&
-			!config.url?.includes("auth/reset-password/")
-		) {
+		if (!config.url?.includes("auth/login/")) {
 			const session = await get_session();
 			const sessionId = session?.sessionId;
 

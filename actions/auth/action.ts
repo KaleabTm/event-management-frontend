@@ -90,3 +90,13 @@ export async function logout() {
 		throw new Error(error.response?.data?.message || "Logout failed");
 	}
 }
+
+export async function getCurrentUser() {
+	try {
+		const response = await axiosInstance.get("auth/me/");
+		const data = await response.data;
+		return data.data;
+	} catch (error: any) {
+		throw new Error(error.response?.data?.message || "Logout failed");
+	}
+}

@@ -1,7 +1,7 @@
 import { useRouter } from "next/navigation";
 
-import { useMutation } from "@tanstack/react-query";
-import { login, register, logout } from "@/actions/auth/action";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { login, register, logout, getCurrentUser } from "@/actions/auth/action";
 
 import { PAGES, AUTH_FORM } from "@/constants/colors";
 import { toast } from "sonner"; // or wherever your toast comes from
@@ -73,5 +73,21 @@ export const useLogout = () => {
 			toast.dismiss();
 			toast.error(errorMessage);
 		},
+	});
+};
+
+export const useFetchMe = (enable: boolean) => {
+	return useQuery({
+		queryKey: ["getme"],
+		queryFn: async () => {
+			try {
+				const data = await getCurrentUser();
+				return data;
+			} catch (error: any) {
+				toast.error(error.message);
+				throw error;
+			}
+		},
+		enabled: enable,
 	});
 };

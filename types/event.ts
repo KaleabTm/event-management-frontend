@@ -1,21 +1,24 @@
+import type { Calendar } from "@/types/calendar";
+import type { User } from "@/types/user";
+
 export interface Event {
 	id: string;
 	title: string;
 	description?: string;
-	start: string;
-	end: string;
-	allDay: boolean;
-	color: string;
-	calendarId: string;
-	userId: string;
+	start_time: string;
+	end_time: string;
+	is_all_day: boolean;
+	color: string | null;
+	calendar: Calendar;
+	user: User;
 	recurrence: {
-		type: "none" | "daily" | "weekly" | "monthly" | "yearly" | "custom";
+		frequency: "none" | "daily" | "weekly" | "monthly" | "yearly" | "custom";
 		interval: number;
 		weekdays: number[];
-		monthlyType: "date" | "weekday";
-		weekdayOrdinal: number;
-		endDate?: string;
-		endAfter: number;
+		monthly_type: "date" | "weekday";
+		weekday_ordinal: number;
+		end_date?: string;
+		repeat_count: number;
 	};
 	created_at: string;
 	updated_at: string;
@@ -24,18 +27,34 @@ export interface Event {
 export interface EventFormData {
 	title: string;
 	description?: string;
-	start: string;
-	end: string;
-	allDay: boolean;
+	start_time: string;
+	end_time: string;
+	is_all_day: boolean;
 	color: string;
 	calendarId: string;
 	recurrence: {
-		type: "none" | "daily" | "weekly" | "monthly" | "yearly" | "custom";
+		frequency: "none" | "daily" | "weekly" | "monthly" | "yearly" | "custom";
 		interval: number;
 		weekdays: number[];
-		monthlyType: "date" | "weekday";
-		weekdayOrdinal: number;
-		endDate?: string;
-		endAfter: number;
+		monthly_type: "date" | "weekday";
+		weekday_ordinal: number;
+		end_date?: string;
+		repeat_count: number;
 	};
 }
+
+export type CreateEventInput = {
+	calendar_id: string;
+	title: string;
+	description?: string;
+	start_time: string;
+	end_time: string;
+	is_all_day: boolean;
+	color?: string;
+	frequency: "none" | "daily" | "weekly" | "monthly" | "yearly" | "custom";
+	interval: number;
+	weekdays?: string[] | null;
+	weekday_ordinal?: number | null;
+	end_date?: string | null;
+	repeat_count?: number | null;
+};

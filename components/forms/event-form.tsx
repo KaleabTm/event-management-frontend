@@ -1,12 +1,17 @@
 "use client";
 
-import { useEffect } from "react";
-import { useForm, Controller } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useFetchMe } from "@/actions/query/auth";
+import { useCalendars } from "@/actions/query/calendars";
+import { useCreateEvent, useUpdateEvent } from "@/actions/query/events";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
 import {
 	Select,
 	SelectContent,
@@ -14,19 +19,24 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
-import { eventSchema, type EventFormData } from "@/lib/validations/event";
-import { useCreateEvent, useUpdateEvent } from "@/actions/query/events";
-import { useCalendars } from "@/actions/query/calendars";
+import { Textarea } from "@/components/ui/textarea";
+import { CALENDAR_COLORS, EVENT_FORM, WEEKDAYS } from "@/constants/colors";
 import { useToast } from "@/hooks/use-toast";
 import { exportSingleEvent } from "@/lib/ics-export";
-import { Download } from "lucide-react";
-import { EVENT_FORM, CALENDAR_COLORS, WEEKDAYS } from "@/constants/colors";
+import { eventSchema, type EventFormData } from "@/lib/validations/event";
+import type { Calendar } from "@/types/calendar";
+import type { CreateEventInput } from "@/types/event";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { format } from "date-fns";
+import { CalendarIcon, Download } from "lucide-react";
+import { useEffect } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { Calendar as CalendarUI } from "@/components/ui/calendar";
 
 interface EventFormProps {
 	event?: any;
-	calendars?: any[];
+	calendars?: Calendar[];
 	onSuccess: () => void;
 	onCancel: () => void;
 }
@@ -40,6 +50,7 @@ export default function EventForm({
 	const { data: calendars = [] } = useCalendars();
 	const createEventMutation = useCreateEvent();
 	const updateEventMutation = useUpdateEvent();
+	const user = useFetchMe(true);
 
 	const {
 		register,
@@ -54,64 +65,63 @@ export default function EventForm({
 		defaultValues: {
 			title: "",
 			description: "",
-			start: new Date().toISOString().slice(0, 16),
-			end: new Date(Date.now() + 60 * 60 * 1000).toISOString().slice(0, 16),
-			allDay: false,
+			start_time: new Date().toISOString().slice(0, 16),
+			end_time: new Date(Date.now() + 60 * 60 * 1000).toISOString().slice(0, 16),
+			is_all_day: false,
 			color: CALENDAR_COLORS[0],
-			calendarId: "",
+			calendarId: calendars[0]?.id || "",
 			recurrence: {
-				type: "none",
+				frequency: "none",
 				interval: 1,
 				weekdays: [],
-				monthlyType: "date",
-				weekdayOrdinal: 1,
-				endAfter: 10,
+				monthly_type: "date",
+				weekday_ordinal: 1,
+				repeat_count: 10,
 			},
 		},
 	});
 
-	const watchAllDay = watch("allDay");
-	const watchRecurrenceType = watch("recurrence.type");
-
+	const watchAllDay = watch("is_all_day");
+	const watchRecurrenceType = watch("recurrence.frequency");
 	useEffect(() => {
 		if (event) {
 			reset({
 				title: event.title || "",
 				description: event.description || "",
-				start: event.start
-					? new Date(event.start).toISOString().slice(0, 16)
+				start_time: event.start_time
+					? new Date(event.start_time).toISOString().slice(0, 16)
 					: new Date().toISOString().slice(0, 16),
-				end: event.end
-					? new Date(event.end).toISOString().slice(0, 16)
+				end_time: event.end_time
+					? new Date(event.end_time).toISOString().slice(0, 16)
 					: new Date(Date.now() + 60 * 60 * 1000).toISOString().slice(0, 16),
-				allDay: event.allDay || false,
+				is_all_day: event.is_all_day || false,
 				color: event.color || CALENDAR_COLORS[0],
-				calendarId: event.calendarId || calendars[0]?.id || "",
+				calendarId: event.calendar?.id || calendars[0]?.id || "",
 				recurrence: event.recurrence || {
-					type: "none",
+					frequency: "none",
 					interval: 1,
 					weekdays: [],
-					monthlyType: "date",
-					weekdayOrdinal: 1,
-					endAfter: 10,
+					monthly_type: "date",
+					weekday_ordinal: 1,
+					repeat_count: 10,
 				},
 			});
 		} else {
 			reset({
 				title: "",
 				description: "",
-				start: new Date().toISOString().slice(0, 16),
-				end: new Date(Date.now() + 60 * 60 * 1000).toISOString().slice(0, 16),
-				allDay: false,
+				start_time: new Date().toISOString().slice(0, 16),
+				end_time: new Date(Date.now() + 60 * 60 * 1000).toISOString().slice(0, 16),
+				is_all_day: false,
 				color: CALENDAR_COLORS[0],
 				calendarId: calendars[0]?.id || "",
 				recurrence: {
-					type: "none",
+					frequency: "none",
 					interval: 1,
 					weekdays: [],
-					monthlyType: "date",
-					weekdayOrdinal: 1,
-					endAfter: 10,
+					monthly_type: "date",
+					weekday_ordinal: 1,
+					repeat_count: 10,
 				},
 			});
 		}
@@ -120,13 +130,49 @@ export default function EventForm({
 	const onSubmit = async (data: EventFormData) => {
 		try {
 			if (event?.id) {
-				await updateEventMutation.mutateAsync({ id: event.id, eventData: data });
+				const { calendarId, recurrence, ...rest } = data;
+
+				const payload: CreateEventInput = {
+					...rest,
+					calendar_id: calendarId,
+					frequency: recurrence.frequency,
+					interval: recurrence.interval,
+					weekdays: recurrence.weekdays?.map(String), // convert to string[] if needed
+					weekday_ordinal: recurrence.weekday_ordinal,
+					end_date: recurrence.end_date,
+					repeat_count: recurrence.repeat_count,
+				};
+				await updateEventMutation.mutateAsync({ id: event.id, eventData: payload });
 				toast({
 					title: "Event updated",
 					description: "Your event has been updated successfully.",
 				});
 			} else {
-				await createEventMutation.mutateAsync(data);
+				const {
+					recurrence, // contains frequency, interval, weekdays, etc.
+					calendarId, // camelCase from form
+					...rest // the rest of the fields like title, color, etc.
+				} = data;
+
+				const payload: CreateEventInput = {
+					...rest,
+					calendar_id: calendarId,
+					...{
+						...recurrence,
+						weekdays: recurrence.weekdays?.map(String), // <== fix here
+					},
+				};
+				// adapt to your auth method
+				if (!user) {
+					toast({
+						title: "Error",
+						description: "User not logged in",
+						variant: "destructive",
+					});
+					return;
+				}
+				await createEventMutation.mutateAsync(payload);
+
 				toast({
 					title: "Event created",
 					description: "Your event has been created successfully.",
@@ -206,54 +252,151 @@ export default function EventForm({
 					)}
 				</div>
 			</div>
-
 			{/* All Day Toggle */}
 			<div className="flex items-center space-x-2">
 				<Controller
-					name="allDay"
+					name="is_all_day"
 					control={control}
 					render={({ field }) => (
 						<Switch
-							id="allDay"
+							id="is_all_day"
 							checked={field.value}
 							onCheckedChange={field.onChange}
 						/>
 					)}
 				/>
-				<Label htmlFor="allDay">{EVENT_FORM.FIELDS.ALL_DAY.LABEL}</Label>
+				<Label htmlFor="is_all_day">{EVENT_FORM.FIELDS.ALL_DAY.LABEL}</Label>
 			</div>
 
-			{/* Date and Time */}
 			<div className="grid grid-cols-2 gap-4">
+				{/* Start Time */}
 				<div className="space-y-2">
-					<Label htmlFor="start">
+					<Label htmlFor="start_time">
 						{EVENT_FORM.FIELDS.START_DATE.LABEL}{" "}
 						{watchAllDay ? "(Date)" : "(Date & Time)"} *
 					</Label>
-					<Input
-						id="start"
-						type={watchAllDay ? "date" : "datetime-local"}
-						{...register("start")}
-						className={errors.start ? "border-destructive" : ""}
+					<Controller
+						control={control}
+						name="start_time"
+						render={({ field }) => {
+							// Convert ISO string to Date or fallback to now
+							const valueDate = field.value ? new Date(field.value) : new Date();
+
+							return (
+								<Popover>
+									<PopoverTrigger asChild>
+										<Button
+											variant="outline"
+											className={`w-full pl-3 text-left font-normal ${
+												errors.start_time ? "border-destructive" : ""
+											}`}
+										>
+											<CalendarIcon className="mr-2 h-4 w-4" />
+											{watchAllDay
+												? format(valueDate, "yyyy-MM-dd")
+												: format(valueDate, "yyyy-MM-dd HH:mm")}
+										</Button>
+									</PopoverTrigger>
+									<PopoverContent className="w-auto p-0" align="start">
+										<CalendarUI
+											mode={watchAllDay ? "single" : "single"}
+											selected={valueDate}
+											onSelect={(date: Date | undefined) => {
+												if (!date) return;
+												// If all day, reset time to 00:00
+												if (watchAllDay) {
+													date.setHours(0, 0, 0, 0);
+													// for end_time, might want to handle differently (e.g. +1 day - 1ms)
+												}
+												field.onChange(date.toISOString());
+											}}
+											// show time selector only if not all day, use a custom time picker or external library for time selection if needed
+											// Shadcn Calendar does not support time by default, so we need a workaround:
+											// For full datetime support, combine with an Input of type time or a third-party time picker
+										/>
+										{!watchAllDay && (
+											<input
+												type="time"
+												className="w-full border-t px-2 py-1 outline-none"
+												value={format(valueDate, "HH:mm")}
+												onChange={(e) => {
+													const [hours, minutes] = e.target.value.split(":");
+													const newDate = new Date(valueDate);
+													newDate.setHours(Number(hours), Number(minutes));
+													field.onChange(newDate.toISOString());
+												}}
+											/>
+										)}
+									</PopoverContent>
+								</Popover>
+							);
+						}}
 					/>
-					{errors.start && (
-						<p className="text-sm text-destructive">{errors.start.message}</p>
+					{errors.start_time && (
+						<p className="text-sm text-destructive">{errors.start_time.message}</p>
 					)}
 				</div>
 
+				{/* End Time */}
 				<div className="space-y-2">
-					<Label htmlFor="end">
+					<Label htmlFor="end_time">
 						{EVENT_FORM.FIELDS.END_DATE.LABEL}{" "}
 						{watchAllDay ? "(Date)" : "(Date & Time)"} *
 					</Label>
-					<Input
-						id="end"
-						type={watchAllDay ? "date" : "datetime-local"}
-						{...register("end")}
-						className={errors.end ? "border-destructive" : ""}
+					<Controller
+						control={control}
+						name="end_time"
+						render={({ field }) => {
+							const valueDate = field.value
+								? new Date(field.value)
+								: new Date(Date.now() + 60 * 60 * 1000);
+							return (
+								<Popover>
+									<PopoverTrigger asChild>
+										<Button
+											variant="outline"
+											className={`w-full pl-3 text-left font-normal ${
+												errors.end_time ? "border-destructive" : ""
+											}`}
+										>
+											<CalendarIcon className="mr-2 h-4 w-4" />
+											{watchAllDay
+												? format(valueDate, "yyyy-MM-dd")
+												: format(valueDate, "yyyy-MM-dd HH:mm")}
+										</Button>
+									</PopoverTrigger>
+									<PopoverContent className="w-auto p-0" align="start">
+										<CalendarUI
+											mode="single"
+											selected={valueDate}
+											onSelect={(date) => {
+												if (!date) return;
+												if (watchAllDay) {
+													date.setHours(0, 0, 0, 0);
+												}
+												field.onChange(date.toISOString());
+											}}
+										/>
+										{!watchAllDay && (
+											<input
+												type="time"
+												className="w-full border-t px-2 py-1 outline-none"
+												value={format(valueDate, "HH:mm")}
+												onChange={(e) => {
+													const [hours, minutes] = e.target.value.split(":");
+													const newDate = new Date(valueDate);
+													newDate.setHours(Number(hours), Number(minutes));
+													field.onChange(newDate.toISOString());
+												}}
+											/>
+										)}
+									</PopoverContent>
+								</Popover>
+							);
+						}}
 					/>
-					{errors.end && (
-						<p className="text-sm text-destructive">{errors.end.message}</p>
+					{errors.end_time && (
+						<p className="text-sm text-destructive">{errors.end_time.message}</p>
 					)}
 				</div>
 			</div>
@@ -283,13 +426,12 @@ export default function EventForm({
 					))}
 				</div>
 			</div>
-
 			{/* Recurrence Settings */}
 			<div className="space-y-4">
 				<div className="space-y-2">
 					<Label>{EVENT_FORM.FIELDS.RECURRENCE.LABEL}</Label>
 					<Controller
-						name="recurrence.type"
+						name="recurrence.frequency"
 						control={control}
 						render={({ field }) => (
 							<Select value={field.value} onValueChange={field.onChange}>
@@ -371,7 +513,7 @@ export default function EventForm({
 					<div className="space-y-2">
 						<Label>Monthly Recurrence Type</Label>
 						<Controller
-							name="recurrence.monthlyType"
+							name="recurrence.monthly_type"
 							control={control}
 							render={({ field }) => (
 								<Select value={field.value} onValueChange={field.onChange}>
@@ -388,7 +530,6 @@ export default function EventForm({
 					</div>
 				)}
 			</div>
-
 			{/* Form Actions */}
 			<div className="flex justify-between items-center pt-4 border-t">
 				{event?.id && (

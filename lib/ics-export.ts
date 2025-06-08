@@ -1,23 +1,5 @@
 // ICS file generation utilities
-interface Event {
-	id: string;
-	title: string;
-	description?: string;
-	start: string;
-	end: string;
-	allDay: boolean;
-	color: string;
-	calendarId: string;
-	recurrence: {
-		type: "none" | "daily" | "weekly" | "monthly" | "yearly" | "custom";
-		interval: number;
-		weekdays: number[];
-		monthlyType: "date" | "weekday";
-		weekdayOrdinal: number;
-		endDate?: string;
-		endAfter: number;
-	};
-}
+import type { Event } from "@/types/event";
 
 export function generateICSContent(
 	events: Event[],
@@ -37,11 +19,11 @@ export function generateICSContent(
 	];
 
 	events.forEach((event) => {
-		const startDate = new Date(event.start);
-		const endDate = new Date(event.end);
+		const startDate = new Date(event.start_time);
+		const end_date = new Date(event.end_time);
 
-		const formatDate = (date: Date, allDay: boolean) => {
-			if (allDay) {
+		const formatDate = (date: Date, is_all_day: boolean) => {
+			if (is_all_day) {
 				return date.toISOString().split("T")[0].replace(/-/g, "");
 			}
 			return date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
@@ -51,19 +33,19 @@ export function generateICSContent(
 			"BEGIN:VEVENT",
 			`UID:${event.id}@eventmanager.com`,
 			`DTSTAMP:${timestamp}`,
-			`DTSTART${event.allDay ? ";VALUE=DATE" : ""}:${formatDate(startDate, event.allDay)}`,
-			`DTEND${event.allDay ? ";VALUE=DATE" : ""}:${formatDate(endDate, event.allDay)}`,
+			`DTSTART${event.is_all_day ? ";VALUE=DATE" : ""}:${formatDate(startDate, event.is_all_day)}`,
+			`DTEND${event.is_all_day ? ";VALUE=DATE" : ""}:${formatDate(end_date, event.is_all_day)}`,
 			`SUMMARY:${event.title.replace(/,/g, "\\,")}`,
 			event.description
 				? `DESCRIPTION:${event.description.replace(/,/g, "\\,").replace(/\n/g, "\\n")}`
 				: "",
-			`CATEGORIES:${event.calendarId}`,
+			`CATEGORIES:${event.calendar.id}`,
 			"STATUS:CONFIRMED",
 			"TRANSP:OPAQUE"
 		);
 
 		// Add recurrence rule if applicable
-		if (event.recurrence.type !== "none") {
+		if (event.recurrence.frequency !== "none") {
 			const rrule = generateRRule(event.recurrence);
 			if (rrule) {
 				icsContent.push(`RRULE:${rrule}`);
@@ -79,26 +61,26 @@ export function generateICSContent(
 }
 
 function generateRRule(recurrence: Event["recurrence"]): string {
-	const parts = [`FREQ=${recurrence.type.toUpperCase()}`];
+	const parts = [`FREQ=${recurrence.frequency.toUpperCase()}`];
 
 	if (recurrence.interval > 1) {
 		parts.push(`INTERVAL=${recurrence.interval}`);
 	}
 
-	if (recurrence.type === "custom" && recurrence.weekdays.length > 0) {
+	if (recurrence.frequency === "custom" && recurrence.weekdays.length > 0) {
 		const dayMap = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
 		const days = recurrence.weekdays.map((day) => dayMap[day]).join(",");
 		parts.push(`BYDAY=${days}`);
 	}
 
-	if (recurrence.endDate) {
-		const endDate = new Date(recurrence.endDate)
+	if (recurrence.end_date) {
+		const end_date = new Date(recurrence.end_date)
 			.toISOString()
 			.split("T")[0]
 			.replace(/-/g, "");
-		parts.push(`UNTIL=${endDate}`);
-	} else if (recurrence.endAfter) {
-		parts.push(`COUNT=${recurrence.endAfter}`);
+		parts.push(`UNTIL=${end_date}`);
+	} else if (recurrence.repeat_count) {
+		parts.push(`COUNT=${recurrence.repeat_count}`);
 	}
 
 	return parts.join(";");

@@ -1,43 +1,20 @@
-import type { Event } from "@/types/event";
+"use client";
+
+import {
+	createEventAction as createEvent,
+	deleteEventAction as deleteEvent,
+	fetchEventsAction as fetchEvents,
+	getEventByIdAction as getEventById,
+	updateEventAction as updateEvent,
+} from "@/actions/events/action";
+import type { CreateEventInput } from "@/types/event";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import axiosInstance from "../axiosInstance";
-
-// Client-side fetch functions using axios
-async function fetchEvents(): Promise<Event[]> {
-	const response = await axiosInstance.get("/events");
-	return response.data;
-}
-
-async function createEvent(
-	eventData: Omit<Event, "id" | "userId" | "created_at" | "updated_at">
-): Promise<Event> {
-	const response = await axiosInstance.post("/events", eventData);
-	return response.data;
-}
-
-async function updateEvent(
-	id: string,
-	eventData: Partial<Event>
-): Promise<Event> {
-	const response = await axiosInstance.put(`/events/${id}`, eventData);
-	return response.data;
-}
-
-async function deleteEvent(id: string): Promise<{ id: string }> {
-	await axiosInstance.delete(`/events/${id}`);
-	return { id };
-}
-
-async function getEventById(id: string): Promise<Event> {
-	const response = await axiosInstance.get(`/events/${id}`);
-	return response.data;
-}
 
 // Query hooks
 export function useEvents() {
 	return useQuery({
 		queryKey: ["events"],
-		queryFn: fetchEvents,
+		queryFn: () => fetchEvents(),
 	});
 }
 
@@ -60,12 +37,17 @@ export function useCreateEvent() {
 	});
 }
 
+type UpdateEventInput = {
+	id: string;
+	eventData: Partial<CreateEventInput>;
+};
+
 export function useUpdateEvent() {
 	const queryClient = useQueryClient();
 
 	return useMutation({
-		mutationFn: ({ id, eventData }: { id: string; eventData: Partial<Event> }) =>
-			updateEvent(id, eventData),
+		mutationFn: ({ id, eventData }: UpdateEventInput) =>
+			updateEvent({ id, eventData }),
 		onSuccess: (data) => {
 			queryClient.invalidateQueries({ queryKey: ["events"] });
 			queryClient.invalidateQueries({ queryKey: ["events", data.id] });
@@ -88,10 +70,12 @@ export function useDeleteEvent() {
 // Utility hooks
 export function useEventsByCalendar(calendarId: string) {
 	const { data: events = [] } = useEvents();
-	return events.filter((event) => event.calendarId === calendarId);
+	return events.filter((event) => event.calendar.id === calendarId);
 }
 
 export function useVisibleEvents(visibleCalendarIds: string[]) {
 	const { data: events = [] } = useEvents();
-	return events.filter((event) => visibleCalendarIds.includes(event.calendarId));
+	return events.filter((event) =>
+		visibleCalendarIds.includes(event.calendar.id)
+	);
 }
