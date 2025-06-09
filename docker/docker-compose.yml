@@ -1,0 +1,14 @@
+services:
+ ems_frontend:
+  build:
+   context: ../
+   dockerfile: docker/Dockerfile
+  command: "node server.js"
+  environment:
+   - PORT=3000
+   - NODE_ENV=production
+   - NEXT_PUBLIC_ENABLE_REACT_QUERY_DEV_TOOLS=false
+   - DJANGO_API_BASE_URL=http://django:8000/api/
+   - SESSION_NAME=EMS
+  ports:
+   - "3000:3000"

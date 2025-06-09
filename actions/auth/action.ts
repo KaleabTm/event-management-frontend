@@ -4,10 +4,12 @@ import axiosInstance from "../axiosInstance";
 import type { LoginFormData, RegisterFormData } from "@/types/auth";
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import { setEncryptedSessionCookie } from "@/lib/utils/setEncryptedSessionCookie";
 
-const SESSION_NAME = "EMS";
+const SESSION_NAME = process.env.SESSION_NAME;
 
 const secretKey = "secret";
+
 const key = new TextEncoder().encode(secretKey);
 
 export interface ICredentials {
@@ -41,7 +43,7 @@ export async function decrypt(input: string): Promise<any> {
 }
 
 export async function get_session() {
-	const session = cookies().get(SESSION_NAME)?.value;
+	const session = cookies().get(SESSION_NAME ?? "session")?.value;
 	if (!session) return null;
 
 	return await decrypt(session);
@@ -50,17 +52,7 @@ export async function get_session() {
 export async function login(credentials: LoginFormData) {
 	const response = await axiosInstance.post("auth/login/", credentials);
 
-	const sessionId = response.data.session;
-
-	const expires = Date.now() + 24 * 60 * 60 * 1000;
-	const session = await encrypt({ sessionId, expires });
-
-	cookies().set(SESSION_NAME, session, {
-		expires: expires,
-		httpOnly: true,
-		sameSite: "lax",
-		secure: false,
-	});
+	await setEncryptedSessionCookie(response.data.session);
 
 	if (!response || !response.data || !response.data.session) {
 		throw new Error("Invalid email or password");
@@ -72,6 +64,9 @@ export async function login(credentials: LoginFormData) {
 export async function register(data: RegisterFormData) {
 	try {
 		const response = await axiosInstance.post("auth/register/", data);
+
+		await setEncryptedSessionCookie(response.data.session);
+
 		return { success: true, data: response.data };
 	} catch (error: any) {
 		console.error("Registration error:", error);
@@ -82,7 +77,7 @@ export async function register(data: RegisterFormData) {
 export async function logout() {
 	try {
 		// await axiosInstance.get("auth/logout/");
-		cookies().set(SESSION_NAME, "", { expires: new Date(0) });
+		cookies().set(SESSION_NAME ?? "session", "", { expires: new Date(0) });
 
 		return { success: true };
 	} catch (error: any) {
