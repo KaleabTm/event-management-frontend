@@ -4,10 +4,8 @@ import type { CreateEventInput, Event } from "@/types/event";
 import axiosInstance from "@/actions/axiosInstance";
 
 export async function fetchEventsAction(): Promise<Event[]> {
-	console.log("ddddd");
 	try {
 		const response = await axiosInstance.get("events/");
-		// const response = await axios.get("http://127.0.0.1:8000/api/events/");
 		return response.data;
 	} catch (error: any) {
 		console.error("Fetch events error:", error);

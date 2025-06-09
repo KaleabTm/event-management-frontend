@@ -45,8 +45,6 @@ export default function AuthForm() {
 	});
 
 	const onSubmit = (data: AuthFormData) => {
-		console.log("Submitting form", data);
-
 		if (data.action === "login") {
 			loginMutation.mutate({
 				email: data.email,

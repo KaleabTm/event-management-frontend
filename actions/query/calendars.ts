@@ -14,15 +14,7 @@ import {
 export function useCalendars() {
 	return useQuery({
 		queryKey: ["calendars"],
-		queryFn: async () => {
-			try {
-				const response = await fetchCalendars();
-				console.log(response);
-				return response;
-			} catch (error) {
-				console.log(error);
-			}
-		},
+		queryFn: () => fetchCalendars(),
 	});
 }
 
