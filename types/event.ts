@@ -15,7 +15,7 @@ export interface Event {
 		frequency: "none" | "daily" | "weekly" | "monthly" | "yearly" | "custom";
 		interval: number;
 		weekdays: number[];
-		monthly_type: "date" | "weekday";
+		monthly_type?: "date" | "weekday";
 		weekday_ordinal: number;
 		end_date?: string;
 		repeat_count: number;
@@ -36,7 +36,7 @@ export interface EventFormData {
 		frequency: "none" | "daily" | "weekly" | "monthly" | "yearly" | "custom";
 		interval: number;
 		weekdays: number[];
-		monthly_type: "date" | "weekday";
+		monthly_type?: "date" | "weekday";
 		weekday_ordinal: number;
 		end_date?: string;
 		repeat_count: number;
@@ -53,8 +53,9 @@ export type CreateEventInput = {
 	color?: string;
 	frequency: "none" | "daily" | "weekly" | "monthly" | "yearly" | "custom";
 	interval: number;
-	weekdays?: string[] | null;
-	weekday_ordinal?: number | null;
-	end_date?: string | null;
-	repeat_count?: number | null;
+	weekdays: number[];
+	monthly_type?: "date" | "weekday";
+	weekday_ordinal: number;
+	end_date?: string;
+	repeat_count: number;
 };

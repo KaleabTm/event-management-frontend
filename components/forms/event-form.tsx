@@ -4,6 +4,7 @@ import { useFetchMe } from "@/actions/query/auth";
 import { useCalendars } from "@/actions/query/calendars";
 import { useCreateEvent, useUpdateEvent } from "@/actions/query/events";
 import { Button } from "@/components/ui/button";
+import { Calendar as CalendarUI } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,7 +33,6 @@ import { format } from "date-fns";
 import { CalendarIcon, Download } from "lucide-react";
 import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { Calendar as CalendarUI } from "@/components/ui/calendar";
 
 interface EventFormProps {
 	event?: any;
@@ -58,6 +58,7 @@ export default function EventForm({
 		control,
 		watch,
 		setValue,
+		getValues,
 		reset,
 		formState: { errors, isSubmitting },
 	} = useForm<EventFormData>({
@@ -76,7 +77,8 @@ export default function EventForm({
 				weekdays: [],
 				monthly_type: "date",
 				weekday_ordinal: 1,
-				repeat_count: 10,
+				repeat_count: 1,
+				end_date: null,
 			},
 		},
 	});
@@ -98,12 +100,13 @@ export default function EventForm({
 				color: event.color || CALENDAR_COLORS[0],
 				calendarId: event.calendar?.id || calendars[0]?.id || "",
 				recurrence: event.recurrence || {
-					frequency: "none",
-					interval: 1,
-					weekdays: [],
-					monthly_type: "date",
-					weekday_ordinal: 1,
-					repeat_count: 10,
+					frequency: event.recurrence.frequency || "none",
+					interval: event.recurrence?.interval ?? 1,
+					weekdays: (event.recurrence?.weekdays || []).map(Number),
+					monthly_type: event.recurrence?.monthly_type || "date",
+					weekday_ordinal: event.recurrence?.weekday_ordinal ?? 1,
+					repeat_count: event.recurrence?.repeat_count ?? 10,
+					end_date: event.recurrence?.end_date ?? undefined,
 				},
 			});
 		} else {
@@ -118,16 +121,18 @@ export default function EventForm({
 				recurrence: {
 					frequency: "none",
 					interval: 1,
-					weekdays: [],
+					weekdays: [] as number[],
 					monthly_type: "date",
 					weekday_ordinal: 1,
 					repeat_count: 10,
+					end_date: undefined,
 				},
 			});
 		}
 	}, [event, reset, calendars]);
 
 	const onSubmit = async (data: EventFormData) => {
+		console.log("uuuu");
 		try {
 			if (event?.id) {
 				const { calendarId, recurrence, ...rest } = data;
@@ -135,13 +140,15 @@ export default function EventForm({
 				const payload: CreateEventInput = {
 					...rest,
 					calendar_id: calendarId,
-					frequency: recurrence.frequency,
+					frequency: recurrence.frequency ?? "none",
 					interval: recurrence.interval,
-					weekdays: recurrence.weekdays?.map(String), // convert to string[] if needed
+					weekdays: recurrence.weekdays.map((w) => Number(w)), // ensure number[]
 					weekday_ordinal: recurrence.weekday_ordinal,
-					end_date: recurrence.end_date,
+					end_date: recurrence.end_date ?? undefined,
 					repeat_count: recurrence.repeat_count,
+					monthly_type: recurrence.monthly_type || "date", // ensure always "date" or "weekday"
 				};
+				console.log("execute query");
 				await updateEventMutation.mutateAsync({ id: event.id, eventData: payload });
 				toast({
 					title: "Event updated",
@@ -159,7 +166,9 @@ export default function EventForm({
 					calendar_id: calendarId,
 					...{
 						...recurrence,
-						weekdays: recurrence.weekdays?.map(String), // <== fix here
+						weekdays: (recurrence.weekdays ?? []).map(Number),
+						end_date: recurrence.end_date ?? undefined,
+						monthly_type: recurrence.monthly_type || "date", // Ensure monthly_type is never undefined
 					},
 				};
 				// adapt to your auth method
@@ -191,6 +200,15 @@ export default function EventForm({
 
 	const isPending =
 		createEventMutation.isPending || updateEventMutation.isPending;
+
+	// console.log("Form errors:", form.formState.errors);
+
+	{
+		console.log("Form Values", getValues());
+	}
+	{
+		console.log("Form errors:", errors);
+	}
 
 	return (
 		<form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -489,12 +507,11 @@ export default function EventForm({
 												id={`weekday-${day.value}`}
 												checked={field.value.includes(day.value)}
 												onCheckedChange={(checked) => {
+													const dayNum = Number(day.value); // Ensure number
 													if (checked) {
-														field.onChange([...field.value, day.value]);
+														field.onChange([...field.value, dayNum]);
 													} else {
-														field.onChange(
-															field.value.filter((d: number) => d !== day.value)
-														);
+														field.onChange(field.value.filter((d: number) => d !== dayNum));
 													}
 												}}
 											/>
@@ -516,7 +533,7 @@ export default function EventForm({
 							name="recurrence.monthly_type"
 							control={control}
 							render={({ field }) => (
-								<Select value={field.value} onValueChange={field.onChange}>
+								<Select value={field.value ?? undefined} onValueChange={field.onChange}>
 									<SelectTrigger>
 										<SelectValue />
 									</SelectTrigger>

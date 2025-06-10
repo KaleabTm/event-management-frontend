@@ -23,9 +23,9 @@ export const eventSchema = z
 			]),
 			interval: z.number().min(1).max(365),
 			weekdays: z.array(z.number().min(0).max(6)),
-			monthly_type: z.enum(["date", "weekday"]),
+			monthly_type: z.enum(["date", "weekday"]).nullable(),
 			weekday_ordinal: z.number().min(1).max(5),
-			end_date: z.string().optional(),
+			end_date: z.string().optional().nullable(),
 			repeat_count: z.number().min(1).max(999),
 		}),
 	})
